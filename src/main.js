@@ -3,6 +3,7 @@
 // Base function.
 var lightbox = function() {
   // Add functionality here.
+  console.log("HELLO");
   return true;
 };
 
