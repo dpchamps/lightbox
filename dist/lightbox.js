@@ -45,6 +45,10 @@ lightbox.util = function(sel){
         }
         return nodeList;
       },
+    /*
+    selectorFunctions
+      if utils are passed a selector, return the selector functions
+     */
       selectorFunctions = {
         addEvents : function(event, handler){
           for (var node in nodeList) {
@@ -61,10 +65,12 @@ lightbox.util = function(sel){
           }
         }
       },
+    /*
+    default functions
+      functions that do not use a selector
+     */
       defaultFunctions = {
-        test : function(){
-          console.log("this is only a test");
-        }
+
       },
       //the api list that utilities will return
       apiFunctions;
