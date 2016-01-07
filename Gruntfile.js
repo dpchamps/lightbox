@@ -10,9 +10,11 @@ module.exports = function(grunt) {
       },
       dist: {
         src: [
-          'src/_intro.js',
-          'src/main.js',
-          'src/_outro.js'
+          'src/head.js',
+          'src/namespace.js',
+          'src/util.js',
+          'src/events.js',
+          'src/tail.js',
         ],
         dest: 'dist/<%= pkg.name.replace(".js", "") %>.js'
       }
@@ -47,9 +49,11 @@ module.exports = function(grunt) {
 
     watch: {
       files: [
-        'src/_intro.js',
-        'src/main.js',
-        'src/_outro.js',
+        'src/head.js',
+        'src/namespace.js',
+        'src/util.js',
+        'src/events.js',
+        'src/tail.js',
         'demo/index.html'
       ],
       tasks: ['concat', 'jshint', 'qunit']
