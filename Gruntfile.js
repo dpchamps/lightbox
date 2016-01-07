@@ -14,7 +14,7 @@ module.exports = function(grunt) {
           'src/namespace.js',
           'src/util.js',
           'src/events.js',
-          'src/tail.js',
+          'src/tail.js'
         ],
         dest: 'dist/<%= pkg.name.replace(".js", "") %>.js'
       }
