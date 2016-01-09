@@ -1,12 +1,33 @@
 "use strict";
 var imgCache = function(){
-  var _cache = [];
+
+  var _cache = [],
+      Promise = require('promise').Promise;
   function loadImage(src){
-    return src;
+    return new Promise(function(resolve, reject){
+      var image = new Image();
+      image.onload = function(){
+        resolve(image);
+      };
+      image.onerror = function(){
+        reject(image);
+      };
+
+      image.src = src;
+    });
   }
+  function addImage(image){
+    _cache.push(image);
+  }
+
   return {
-    loadImage : loadImage,
-    cache : _cache
+    'cacheImages' : function(images){
+      _cache = [];
+        for(var i = 0; i < images.length; i++){
+            loadImage(images[i]).then(addImage);
+        }
+      },
+    'cache' : _cache
   };
 };
 

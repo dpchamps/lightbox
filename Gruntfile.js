@@ -49,20 +49,17 @@ module.exports = function(grunt) {
     },
 
     watch: {
-      files: [
-        'src/head.js',
-        'src/namespace.js',
-        'src/util.js',
-        'src/events.js',
-        'src/imgCache.js',
-        'src/tail.js',
-        'demo/index.html'
-      ],
-      tasks: ['concat', 'jshint', 'qunit']
+      files: ['src/*.js', 'src/modules/*.js'],
+      tasks: ['browserify', 'jshint', 'qunit']
     },
 
     browserify: {
-      'dist/<%= pkg.name.replace(".js", "") %>.js': 'src/main.js'
+      'dist/<%= pkg.name.replace(".js", "") %>.js': 'src/main.js',
+      options : {
+        alias : {
+          'promise' : './node_modules/es6-promise/dist/es6-promise.js'
+        }
+      }
     }
   });
 
@@ -74,7 +71,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-browserify');
 
   grunt.registerTask('test', ['jshint', 'qunit']);
-  //grunt.registerTask('serve', ['build', 'watch']);
+  grunt.registerTask('serve', ['build', 'watch']);
   //grunt.registerTask('build', ['concat', 'jshint', 'qunit', 'uglify']);
   grunt.registerTask('build', ['browserify','jshint', 'qunit', 'uglify']);
 
