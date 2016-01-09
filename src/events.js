@@ -129,6 +129,8 @@ lightbox.events.get = function(handler){
     case 'number':
       func = this.getById(handler);
           break;
+    default:
+      throw new Error('Expected string or number, received: '+ typeof(handler));
   }
 
   return func;
@@ -159,6 +161,8 @@ lightbox.events.remove = function(handler){
         throw new Error(handler+" doesn't exist");
       }
       break;
+    default:
+      throw new Error('Expected string or number, received: '+ typeof(handler));
   }
 
   func = this.getById(id);

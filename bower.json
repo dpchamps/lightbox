@@ -8,5 +8,8 @@
     "bower_components",
     "test"
   ],
-  "dependencies": {}
+  "dependencies": {},
+  "devDependencies": {
+    "qunit": "~1.20.0"
+  }
 }
