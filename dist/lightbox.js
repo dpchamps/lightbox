@@ -293,7 +293,7 @@ module.exports = events;
 "use strict";
 var imgCache = function(){
 
-  var _cache = [],
+  var _complete = false,
       Promise = require('promise').Promise;
   function loadImage(src){
     return new Promise(function(resolve, reject){
@@ -308,18 +308,22 @@ var imgCache = function(){
       image.src = src;
     });
   }
-  function addImage(image){
-    _cache.push(image);
-  }
 
   return {
     'cacheImages' : function(images){
-      _cache = [];
-        for(var i = 0; i < images.length; i++){
-            loadImage(images[i]).then(addImage);
-        }
-      },
-    'cache' : _cache
+      _complete = false;
+      var pArray = [];
+      for(var i = 0; i < images.length; i++){
+          pArray.push( loadImage(images[i]) );
+      }
+      Promise.all(pArray).then(function(){
+        //the images have been cached
+        _complete = true;
+      });
+    },
+    'isComplete' : function(){
+      return _complete;
+    }
   };
 };
 
