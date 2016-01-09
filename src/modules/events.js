@@ -19,16 +19,15 @@
  *  _id
  *    a pointer to the next position in the event hash
  */
+"use strict";
 
-
-
-lightbox.events = {
+ var events = {
   _eventHash: {},
   _nameRef: {},
   _id: 0
 };
 
-lightbox.events.idExists = function(id){
+events.idExists = function(id){
   var exists = false;
   if(this._eventHash.hasOwnProperty(id)){
     exists = true;
@@ -42,7 +41,7 @@ lightbox.events.idExists = function(id){
 
     Throw an error if the id doesn't exist, return the function if it does.
  */
-lightbox.events.getById = function(id){
+events.getById = function(id){
   if(!( this._eventHash.hasOwnProperty(id) )){
     throw new Error(id+" doesn't exist");
   }
@@ -54,7 +53,7 @@ lightbox.events.getById = function(id){
   @events.getId
     Retrieve the id of a name
  */
-lightbox.events.getId = function(name){
+events.getId = function(name){
   if(!( this._nameRef.hasOwnProperty(name) )){
     throw new Error(name + " doesn't exist");
   }
@@ -67,7 +66,7 @@ lightbox.events.getId = function(name){
 
    Checks if the name reference hash exists, throws an error or returns the id associated with it.
  */
-lightbox.events.getByName = function(name){
+events.getByName = function(name){
   var id = this.getId(name);
   return this._eventHash[id];
 };
@@ -81,7 +80,7 @@ lightbox.events.getByName = function(name){
 
     returns the name of the function if it exists, returns the id otherwise
  */
-lightbox.events.add = function(handler){
+events.add = function(handler){
   if(typeof handler !== 'function'){
     throw new Error('Expected type function for handler');
   }
@@ -114,7 +113,7 @@ lightbox.events.add = function(handler){
 
     If passed a number, the _eventHash is referenced directly
  */
-lightbox.events.get = function(handler){
+events.get = function(handler){
   var func;
 
   switch(typeof handler){
@@ -136,7 +135,7 @@ lightbox.events.get = function(handler){
   return func;
 };
 
-lightbox.events.remove = function(handler){
+events.remove = function(handler){
   var func,
       id;
 
@@ -175,8 +174,11 @@ lightbox.events.remove = function(handler){
 
     reset erreytang
  */
-lightbox.events.clear = function(){
+events.clear = function(){
   this._eventHash = {};
   this._nameRef = {};
   this._id = 0;
 };
+
+
+module.exports = events;

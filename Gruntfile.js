@@ -14,6 +14,7 @@ module.exports = function(grunt) {
           'src/namespace.js',
           'src/util.js',
           'src/events.js',
+          'src/imgCache.js',
           'src/tail.js'
         ],
         dest: 'dist/<%= pkg.name.replace(".js", "") %>.js'
@@ -36,7 +37,7 @@ module.exports = function(grunt) {
     },
 
     jshint: {
-      files: ['dist/lightbox.js'],
+      files: ['src/modules/*.js', 'src/*.js'],
       options: {
         globals: {
           console: true,
@@ -53,12 +54,16 @@ module.exports = function(grunt) {
         'src/namespace.js',
         'src/util.js',
         'src/events.js',
+        'src/imgCache.js',
         'src/tail.js',
         'demo/index.html'
       ],
       tasks: ['concat', 'jshint', 'qunit']
-    }
+    },
 
+    browserify: {
+      'dist/<%= pkg.name.replace(".js", "") %>.js': 'src/main.js'
+    }
   });
 
   grunt.loadNpmTasks('grunt-contrib-uglify');
@@ -66,9 +71,12 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-qunit');
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-concat');
+  grunt.loadNpmTasks('grunt-browserify');
 
   grunt.registerTask('test', ['jshint', 'qunit']);
-  grunt.registerTask('serve', ['build', 'watch']);
-  grunt.registerTask('build', ['concat', 'jshint', 'qunit', 'uglify']);
+  //grunt.registerTask('serve', ['build', 'watch']);
+  //grunt.registerTask('build', ['concat', 'jshint', 'qunit', 'uglify']);
+  grunt.registerTask('build', ['browserify','jshint', 'qunit', 'uglify']);
+
 
 };

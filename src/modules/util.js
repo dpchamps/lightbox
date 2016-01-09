@@ -1,8 +1,9 @@
 /**
  * utilities functions, top level selector, etc
  */
+"use strict";
 
-lightbox.util = function(sel){
+var util = function(sel){
   var nodeList = [],
       getNodes = function(selector){
         selector = selector.trim();
@@ -60,3 +61,5 @@ lightbox.util = function(sel){
 
   return apiFunctions;
 };
+
+module.exports = util;
