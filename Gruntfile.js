@@ -57,7 +57,8 @@ module.exports = function(grunt) {
       'dist/<%= pkg.name.replace(".js", "") %>.js': 'src/main.js',
       options : {
         alias : {
-          'promise' : './node_modules/es6-promise/dist/es6-promise.js'
+          'promise' : './node_modules/es6-promise/dist/es6-promise.js',
+          'classList' : './node_modules/classlist-polyfill/src/index.js'
         }
       }
     }

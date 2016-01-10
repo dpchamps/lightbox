@@ -11,5 +11,8 @@
     "strict": true,
     "trailing": true,
     "smarttabs": true,
-    "browser" : true
+    "browser" : true,
+    "globals"      : {
+      "Promise"   : true
+    }
 }

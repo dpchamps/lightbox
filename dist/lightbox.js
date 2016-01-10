@@ -1,4 +1,327 @@
 require=(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+var Modernizr = require('./lib/Modernizr'),
+    ModernizrProto = require('./lib/ModernizrProto'),
+    classes = require('./lib/classes'),
+    testRunner = require('./lib/testRunner'),
+    setClasses = require('./lib/setClasses');
+
+// Run each test
+testRunner();
+
+// Remove the "no-js" class if it exists
+setClasses(classes);
+
+delete ModernizrProto.addTest;
+delete ModernizrProto.addAsyncTest;
+
+// Run the things that are supposed to run after the tests
+for (var i = 0; i < Modernizr._q.length; i++) {
+  Modernizr._q[i]();
+}
+
+module.exports = Modernizr;
+
+},{"./lib/Modernizr":2,"./lib/ModernizrProto":3,"./lib/classes":4,"./lib/setClasses":8,"./lib/testRunner":9}],2:[function(require,module,exports){
+var ModernizrProto = require('./ModernizrProto.js');
+  // Fake some of Object.create so we can force non test results to be non "own" properties.
+  var Modernizr = function() {};
+  Modernizr.prototype = ModernizrProto;
+
+  // Leak modernizr globally when you `require` it rather than force it here.
+  // Overwrite name so constructor name is nicer :D
+  Modernizr = new Modernizr();
+
+  module.exports = Modernizr;
+
+
+},{"./ModernizrProto.js":3}],3:[function(require,module,exports){
+var tests = require('./tests.js');
+  /**
+   *
+   * ModernizrProto is the constructor for Modernizr
+   *
+   * @class
+   * @access public
+   */
+
+  var ModernizrProto = {
+    // The current version, dummy
+    _version: '3.2.0 (browsernizr 2.0.1)',
+
+    // Any settings that don't work as separate modules
+    // can go in here as configuration.
+    _config: {
+      'classPrefix' : '',
+      'enableClasses' : true,
+      'enableJSClass' : true,
+      'usePrefixes' : true
+    },
+
+    // Queue of tests
+    _q: [],
+
+    // Stub these for people who are listening
+    on: function(test, cb) {
+      // I don't really think people should do this, but we can
+      // safe guard it a bit.
+      // -- NOTE:: this gets WAY overridden in src/addTest for actual async tests.
+      // This is in case people listen to synchronous tests. I would leave it out,
+      // but the code to *disallow* sync tests in the real version of this
+      // function is actually larger than this.
+      var self = this;
+      setTimeout(function() {
+        cb(self[test]);
+      }, 0);
+    },
+
+    addTest: function(name, fn, options) {
+      tests.push({name : name, fn : fn, options : options});
+    },
+
+    addAsyncTest: function(fn) {
+      tests.push({name : null, fn : fn});
+    }
+  };
+
+  module.exports = ModernizrProto;
+
+
+},{"./tests.js":10}],4:[function(require,module,exports){
+
+  var classes = [];
+  module.exports = classes;
+
+
+},{}],5:[function(require,module,exports){
+
+  /**
+   * docElement is a convenience wrapper to grab the root element of the document
+   *
+   * @access private
+   * @returns {HTMLElement|SVGElement} The root element of the document
+   */
+
+  var docElement = document.documentElement;
+  module.exports = docElement;
+
+
+},{}],6:[function(require,module,exports){
+
+  /**
+   * is returns a boolean if the typeof an obj is exactly type.
+   *
+   * @access private
+   * @function is
+   * @param {*} obj - A thing we want to check the type of
+   * @param {string} type - A string to compare the typeof against
+   * @returns {boolean}
+   */
+
+  function is(obj, type) {
+    return typeof obj === type;
+  }
+  module.exports = is;
+
+
+},{}],7:[function(require,module,exports){
+var docElement = require('./docElement.js');
+  /**
+   * A convenience helper to check if the document we are running in is an SVG document
+   *
+   * @access private
+   * @returns {boolean}
+   */
+
+  var isSVG = docElement.nodeName.toLowerCase() === 'svg';
+  module.exports = isSVG;
+
+
+},{"./docElement.js":5}],8:[function(require,module,exports){
+var Modernizr = require('./Modernizr.js');
+var docElement = require('./docElement.js');
+var isSVG = require('./isSVG.js');
+  /**
+   * setClasses takes an array of class names and adds them to the root element
+   *
+   * @access private
+   * @function setClasses
+   * @param {string[]} classes - Array of class names
+   */
+
+  // Pass in an and array of class names, e.g.:
+  //  ['no-webp', 'borderradius', ...]
+  function setClasses(classes) {
+    var className = docElement.className;
+    var classPrefix = Modernizr._config.classPrefix || '';
+
+    if (isSVG) {
+      className = className.baseVal;
+    }
+
+    // Change `no-js` to `js` (independently of the `enableClasses` option)
+    // Handle classPrefix on this too
+    if (Modernizr._config.enableJSClass) {
+      var reJS = new RegExp('(^|\\s)' + classPrefix + 'no-js(\\s|$)');
+      className = className.replace(reJS, '$1' + classPrefix + 'js$2');
+    }
+
+    if (Modernizr._config.enableClasses) {
+      // Add the new classes
+      className += ' ' + classPrefix + classes.join(' ' + classPrefix);
+      isSVG ? docElement.className.baseVal = className : docElement.className = className;
+    }
+
+  }
+
+  module.exports = setClasses;
+
+
+},{"./Modernizr.js":2,"./docElement.js":5,"./isSVG.js":7}],9:[function(require,module,exports){
+var tests = require('./tests.js');
+var Modernizr = require('./Modernizr.js');
+var classes = require('./classes.js');
+var is = require('./is.js');
+  /**
+   * Run through all tests and detect their support in the current UA.
+   *
+   * @access private
+   */
+
+  function testRunner() {
+    var featureNames;
+    var feature;
+    var aliasIdx;
+    var result;
+    var nameIdx;
+    var featureName;
+    var featureNameSplit;
+
+    for (var featureIdx in tests) {
+      if (tests.hasOwnProperty(featureIdx)) {
+        featureNames = [];
+        feature = tests[featureIdx];
+        // run the test, throw the return value into the Modernizr,
+        // then based on that boolean, define an appropriate className
+        // and push it into an array of classes we'll join later.
+        //
+        // If there is no name, it's an 'async' test that is run,
+        // but not directly added to the object. That should
+        // be done with a post-run addTest call.
+        if (feature.name) {
+          featureNames.push(feature.name.toLowerCase());
+
+          if (feature.options && feature.options.aliases && feature.options.aliases.length) {
+            // Add all the aliases into the names list
+            for (aliasIdx = 0; aliasIdx < feature.options.aliases.length; aliasIdx++) {
+              featureNames.push(feature.options.aliases[aliasIdx].toLowerCase());
+            }
+          }
+        }
+
+        // Run the test, or use the raw value if it's not a function
+        result = is(feature.fn, 'function') ? feature.fn() : feature.fn;
+
+
+        // Set each of the names on the Modernizr object
+        for (nameIdx = 0; nameIdx < featureNames.length; nameIdx++) {
+          featureName = featureNames[nameIdx];
+          // Support dot properties as sub tests. We don't do checking to make sure
+          // that the implied parent tests have been added. You must call them in
+          // order (either in the test, or make the parent test a dependency).
+          //
+          // Cap it to TWO to make the logic simple and because who needs that kind of subtesting
+          // hashtag famous last words
+          featureNameSplit = featureName.split('.');
+
+          if (featureNameSplit.length === 1) {
+            Modernizr[featureNameSplit[0]] = result;
+          } else {
+            // cast to a Boolean, if not one already
+            /* jshint -W053 */
+            if (Modernizr[featureNameSplit[0]] && !(Modernizr[featureNameSplit[0]] instanceof Boolean)) {
+              Modernizr[featureNameSplit[0]] = new Boolean(Modernizr[featureNameSplit[0]]);
+            }
+
+            Modernizr[featureNameSplit[0]][featureNameSplit[1]] = result;
+          }
+
+          classes.push((result ? '' : 'no-') + featureNameSplit.join('-'));
+        }
+      }
+    }
+  }
+  module.exports = testRunner;
+
+
+},{"./Modernizr.js":2,"./classes.js":4,"./is.js":6,"./tests.js":10}],10:[function(require,module,exports){
+
+  var tests = [];
+  module.exports = tests;
+
+
+},{}],11:[function(require,module,exports){
+/*!
+{
+  "name": "classList",
+  "caniuse": "classlist",
+  "property": "classlist",
+  "tags": ["dom"],
+  "builderAliases": ["dataview_api"],
+  "notes": [{
+    "name": "MDN Docs",
+    "href": "https://developer.mozilla.org/en/DOM/element.classList"
+  }]
+}
+!*/
+var Modernizr = require('./../../lib/Modernizr.js');
+var docElement = require('./../../lib/docElement.js');
+  Modernizr.addTest('classlist', 'classList' in docElement);
+
+
+},{"./../../lib/Modernizr.js":2,"./../../lib/docElement.js":5}],12:[function(require,module,exports){
+/*!
+{
+  "name": "ES6 Promises",
+  "property": "promises",
+  "caniuse": "promises",
+  "polyfills": ["es6promises"],
+  "authors": ["Krister Kari", "Jake Archibald"],
+  "tags": ["es6"],
+  "notes": [{
+    "name": "The ES6 promises spec",
+    "href": "https://github.com/domenic/promises-unwrapping"
+  },{
+    "name": "Chromium dashboard - ES6 Promises",
+    "href": "http://www.chromestatus.com/features/5681726336532480"
+  },{
+    "name": "JavaScript Promises: There and back again - HTML5 Rocks",
+    "href": "http://www.html5rocks.com/en/tutorials/es6/promises/"
+  }]
+}
+!*/
+/* DOC
+Check if browser implements ECMAScript 6 Promises per specification.
+*/
+var Modernizr = require('./../../lib/Modernizr.js');
+  Modernizr.addTest('promises', function() {
+    return 'Promise' in window &&
+    // Some of these methods are missing from
+    // Firefox/Chrome experimental implementations
+    'resolve' in window.Promise &&
+    'reject' in window.Promise &&
+    'all' in window.Promise &&
+    'race' in window.Promise &&
+    // Older version of the spec had a resolver object
+    // as the arg rather than a function
+    (function() {
+      var resolve;
+      new window.Promise(function(r) { resolve = r; });
+      return typeof resolve === 'function';
+    }());
+  });
+
+
+},{"./../../lib/Modernizr.js":2}],13:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -91,19 +414,21 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],2:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 "use strict";
+require('./modules/polyfill-checks.js');
 var lightbox = {
   util : require('./modules/util.js'),
   events : require('./modules/events.js'),
-  imgCache: require('./modules/imgCache.js')
+  imgCache: require('./modules/imgCache.js'),
+  translate: require('./modules/translate.js')
 };
 
 window.lightbox = lightbox;
 
 
 
-},{"./modules/events.js":3,"./modules/imgCache.js":4,"./modules/util.js":5}],3:[function(require,module,exports){
+},{"./modules/events.js":15,"./modules/imgCache.js":16,"./modules/polyfill-checks.js":17,"./modules/translate.js":18,"./modules/util.js":19}],15:[function(require,module,exports){
 /**
  * lightbox events / event  handlers
  *
@@ -289,12 +614,12 @@ events.clear = function(){
 
 module.exports = events;
 
-},{}],4:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 "use strict";
 var imgCache = function(){
 
-  var _complete = false,
-      Promise = require('promise').Promise;
+  var _complete = false;
+
   function loadImage(src){
     return new Promise(function(resolve, reject){
       var image = new Image();
@@ -329,7 +654,45 @@ var imgCache = function(){
 
 module.exports = imgCache();
 
-},{"promise":"promise"}],5:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
+/*
+The lightbox relies on serveral features that might not be widely supported.
+So let's try and make is flexible
+ */
+"use strict";
+
+module.exports = (function(){
+  require('browsernizr/test/dom/classlist.js');
+  require('browsernizr/test/es6/promises.js');
+  var Modernizr = require('browsernizr');
+
+  if(!Modernizr.classlist){
+    require('classlist-polyfill');
+  }
+
+  if(!Modernizr.promise){
+    window.Promise = require('es6-promise').Promise;
+  }
+
+})();
+
+},{"browsernizr":1,"browsernizr/test/dom/classlist.js":11,"browsernizr/test/es6/promises.js":12,"classlist-polyfill":"classList","es6-promise":"promise"}],18:[function(require,module,exports){
+/*
+functions that move the image around the lightbox
+
+all of these functions are chainable
+ */
+"use strict";
+
+var translate = function(image){
+  return{
+    image: image
+  };
+};
+
+module.exports = translate;
+
+},{}],19:[function(require,module,exports){
 /**
  * utilities functions, top level selector, etc
  */
@@ -395,6 +758,247 @@ var util = function(sel){
 };
 
 module.exports = util;
+
+},{}],"classList":[function(require,module,exports){
+/*
+ * classList.js: Cross-browser full element.classList implementation.
+ * 2014-07-23
+ *
+ * By Eli Grey, http://eligrey.com
+ * Public Domain.
+ * NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
+ */
+
+/*global self, document, DOMException */
+
+/*! @source http://purl.eligrey.com/github/classList.js/blob/master/classList.js*/
+
+/* Copied from MDN:
+ * https://developer.mozilla.org/en-US/docs/Web/API/Element/classList
+ */
+
+if ("document" in window.self) {
+
+  // Full polyfill for browsers with no classList support
+  if (!("classList" in document.createElement("_"))) {
+
+  (function (view) {
+
+    "use strict";
+
+    if (!('Element' in view)) return;
+
+    var
+        classListProp = "classList"
+      , protoProp = "prototype"
+      , elemCtrProto = view.Element[protoProp]
+      , objCtr = Object
+      , strTrim = String[protoProp].trim || function () {
+        return this.replace(/^\s+|\s+$/g, "");
+      }
+      , arrIndexOf = Array[protoProp].indexOf || function (item) {
+        var
+            i = 0
+          , len = this.length
+        ;
+        for (; i < len; i++) {
+          if (i in this && this[i] === item) {
+            return i;
+          }
+        }
+        return -1;
+      }
+      // Vendors: please allow content code to instantiate DOMExceptions
+      , DOMEx = function (type, message) {
+        this.name = type;
+        this.code = DOMException[type];
+        this.message = message;
+      }
+      , checkTokenAndGetIndex = function (classList, token) {
+        if (token === "") {
+          throw new DOMEx(
+              "SYNTAX_ERR"
+            , "An invalid or illegal string was specified"
+          );
+        }
+        if (/\s/.test(token)) {
+          throw new DOMEx(
+              "INVALID_CHARACTER_ERR"
+            , "String contains an invalid character"
+          );
+        }
+        return arrIndexOf.call(classList, token);
+      }
+      , ClassList = function (elem) {
+        var
+            trimmedClasses = strTrim.call(elem.getAttribute("class") || "")
+          , classes = trimmedClasses ? trimmedClasses.split(/\s+/) : []
+          , i = 0
+          , len = classes.length
+        ;
+        for (; i < len; i++) {
+          this.push(classes[i]);
+        }
+        this._updateClassName = function () {
+          elem.setAttribute("class", this.toString());
+        };
+      }
+      , classListProto = ClassList[protoProp] = []
+      , classListGetter = function () {
+        return new ClassList(this);
+      }
+    ;
+    // Most DOMException implementations don't allow calling DOMException's toString()
+    // on non-DOMExceptions. Error's toString() is sufficient here.
+    DOMEx[protoProp] = Error[protoProp];
+    classListProto.item = function (i) {
+      return this[i] || null;
+    };
+    classListProto.contains = function (token) {
+      token += "";
+      return checkTokenAndGetIndex(this, token) !== -1;
+    };
+    classListProto.add = function () {
+      var
+          tokens = arguments
+        , i = 0
+        , l = tokens.length
+        , token
+        , updated = false
+      ;
+      do {
+        token = tokens[i] + "";
+        if (checkTokenAndGetIndex(this, token) === -1) {
+          this.push(token);
+          updated = true;
+        }
+      }
+      while (++i < l);
+
+      if (updated) {
+        this._updateClassName();
+      }
+    };
+    classListProto.remove = function () {
+      var
+          tokens = arguments
+        , i = 0
+        , l = tokens.length
+        , token
+        , updated = false
+        , index
+      ;
+      do {
+        token = tokens[i] + "";
+        index = checkTokenAndGetIndex(this, token);
+        while (index !== -1) {
+          this.splice(index, 1);
+          updated = true;
+          index = checkTokenAndGetIndex(this, token);
+        }
+      }
+      while (++i < l);
+
+      if (updated) {
+        this._updateClassName();
+      }
+    };
+    classListProto.toggle = function (token, force) {
+      token += "";
+
+      var
+          result = this.contains(token)
+        , method = result ?
+          force !== true && "remove"
+        :
+          force !== false && "add"
+      ;
+
+      if (method) {
+        this[method](token);
+      }
+
+      if (force === true || force === false) {
+        return force;
+      } else {
+        return !result;
+      }
+    };
+    classListProto.toString = function () {
+      return this.join(" ");
+    };
+
+    if (objCtr.defineProperty) {
+      var classListPropDesc = {
+          get: classListGetter
+        , enumerable: true
+        , configurable: true
+      };
+      try {
+        objCtr.defineProperty(elemCtrProto, classListProp, classListPropDesc);
+      } catch (ex) { // IE 8 doesn't support enumerable:true
+        if (ex.number === -0x7FF5EC54) {
+          classListPropDesc.enumerable = false;
+          objCtr.defineProperty(elemCtrProto, classListProp, classListPropDesc);
+        }
+      }
+    } else if (objCtr[protoProp].__defineGetter__) {
+      elemCtrProto.__defineGetter__(classListProp, classListGetter);
+    }
+
+    }(window.self));
+
+    } else {
+    // There is full or partial native classList support, so just check if we need
+    // to normalize the add/remove and toggle APIs.
+
+    (function () {
+      "use strict";
+
+      var testElement = document.createElement("_");
+
+      testElement.classList.add("c1", "c2");
+
+      // Polyfill for IE 10/11 and Firefox <26, where classList.add and
+      // classList.remove exist but support only one argument at a time.
+      if (!testElement.classList.contains("c2")) {
+        var createMethod = function(method) {
+          var original = DOMTokenList.prototype[method];
+
+          DOMTokenList.prototype[method] = function(token) {
+            var i, len = arguments.length;
+
+            for (i = 0; i < len; i++) {
+              token = arguments[i];
+              original.call(this, token);
+            }
+          };
+        };
+        createMethod('add');
+        createMethod('remove');
+      }
+
+      testElement.classList.toggle("c3", false);
+
+      // Polyfill for IE 10 and Firefox <24, where classList.toggle does not
+      // support the second argument.
+      if (testElement.classList.contains("c3")) {
+        var _toggle = DOMTokenList.prototype.toggle;
+
+        DOMTokenList.prototype.toggle = function(token, force) {
+          if (1 in arguments && !this.contains(token) === !force) {
+            return force;
+          } else {
+            return _toggle.call(this, token);
+          }
+        };
+
+      }
+
+      testElement = null;
+    }());
+  }
+}
 
 },{}],"promise":[function(require,module,exports){
 (function (process,global){
@@ -1367,4 +1971,4 @@ module.exports = util;
 
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":1}]},{},[2]);
+},{"_process":13}]},{},[14]);

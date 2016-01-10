@@ -13,6 +13,8 @@
   "readmeFilename": "README.md",
   "dependencies": {},
   "devDependencies": {
+    "browsernizr": "^2.0.1",
+    "classlist-polyfill": "^1.0.2",
     "es6-promise": "^3.0.2",
     "grunt": "~0.4.1",
     "grunt-browserify": "^4.0.1",

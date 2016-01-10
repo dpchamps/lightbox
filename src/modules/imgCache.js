@@ -1,8 +1,8 @@
 "use strict";
 var imgCache = function(){
 
-  var _complete = false,
-      Promise = require('promise').Promise;
+  var _complete = false;
+
   function loadImage(src){
     return new Promise(function(resolve, reject){
       var image = new Image();
