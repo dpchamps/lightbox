@@ -36,10 +36,6 @@ var translate = function(image){
     timedFunctions.push(timedFn);
   }
   return{
-    start: function(){
-      waterfall();
-      return done;
-    },
     slideRight: function(){
       var idx;
       stack(0, function(){
@@ -66,7 +62,11 @@ var translate = function(image){
         image.style.transform = 'translateX(0)';
         //lightbox.navigate.nextImage(idx);
       });
-    }
+    },
+    start: function(){
+      waterfall();
+      return done;
+    },
   };
 };
 
