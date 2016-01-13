@@ -21,7 +21,7 @@ for (var i = 0; i < Modernizr._q.length; i++) {
 
 module.exports = Modernizr;
 
-},{"./lib/Modernizr":2,"./lib/ModernizrProto":3,"./lib/classes":4,"./lib/setClasses":8,"./lib/testRunner":9}],2:[function(require,module,exports){
+},{"./lib/Modernizr":2,"./lib/ModernizrProto":3,"./lib/classes":5,"./lib/setClasses":24,"./lib/testRunner":29}],2:[function(require,module,exports){
 var ModernizrProto = require('./ModernizrProto.js');
   // Fake some of Object.create so we can force non test results to be non "own" properties.
   var Modernizr = function() {};
@@ -86,13 +86,160 @@ var tests = require('./tests.js');
   module.exports = ModernizrProto;
 
 
-},{"./tests.js":10}],4:[function(require,module,exports){
+},{"./tests.js":30}],4:[function(require,module,exports){
+var ModernizrProto = require('./ModernizrProto.js');
+var prefixes = require('./cssomPrefixes.js');
+  /**
+   * atRule returns a given CSS property at-rule (eg @keyframes), possibly in
+   * some prefixed form, or false, in the case of an unsupported rule
+   *
+   * @memberof Modernizr
+   * @name Modernizr.atRule
+   * @optionName Modernizr.atRule()
+   * @optionProp atRule
+   * @access public
+   * @function atRule
+   * @param {string} prop - String name of the @-rule to test for
+   * @returns {string|false} The string representing the (possibly prefixed)
+   * valid version of the @-rule, or `false` when it is unsupported.
+   * @example
+   * ```js
+   *  var keyframes = Modernizr.atRule('@keyframes');
+   *
+   *  if (keyframes) {
+   *    // keyframes are supported
+   *    // could be `@-webkit-keyframes` or `@keyframes`
+   *  } else {
+   *    // keyframes === `false`
+   *  }
+   * ```
+   *
+   */
+
+  var atRule = function(prop) {
+    var length = prefixes.length;
+    var cssrule = window.CSSRule;
+    var rule;
+
+    if (typeof cssrule === 'undefined') {
+      return undefined;
+    }
+
+    if (!prop) {
+      return false;
+    }
+
+    // remove literal @ from beginning of provided property
+    prop = prop.replace(/^@/, '');
+
+    // CSSRules use underscores instead of dashes
+    rule = prop.replace(/-/g, '_').toUpperCase() + '_RULE';
+
+    if (rule in cssrule) {
+      return '@' + prop;
+    }
+
+    for (var i = 0; i < length; i++) {
+      // prefixes gives us something like -o-, and we want O_
+      var prefix = prefixes[i];
+      var thisRule = prefix.toUpperCase() + '_' + rule;
+
+      if (thisRule in cssrule) {
+        return '@-' + prefix.toLowerCase() + '-' + prop;
+      }
+    }
+
+    return false;
+  };
+
+  ModernizrProto.atRule = atRule;
+
+  module.exports = atRule;
+
+
+},{"./ModernizrProto.js":3,"./cssomPrefixes.js":9}],5:[function(require,module,exports){
 
   var classes = [];
   module.exports = classes;
 
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
+
+
+  /**
+   * contains checks to see if a string contains another string
+   *
+   * @access private
+   * @function contains
+   * @param {string} str - The string we want to check for substrings
+   * @param {string} substr - The substring we want to search the first string for
+   * @returns {boolean}
+   */
+
+  function contains(str, substr) {
+    return !!~('' + str).indexOf(substr);
+  }
+
+  module.exports = contains;
+
+
+},{}],7:[function(require,module,exports){
+var isSVG = require('./isSVG.js');
+  /**
+   * createElement is a convenience wrapper around document.createElement. Since we
+   * use createElement all over the place, this allows for (slightly) smaller code
+   * as well as abstracting away issues with creating elements in contexts other than
+   * HTML documents (e.g. SVG documents).
+   *
+   * @access private
+   * @function createElement
+   * @returns {HTMLElement|SVGElement} An HTML or SVG element
+   */
+
+  function createElement() {
+    if (typeof document.createElement !== 'function') {
+      // This is the case in IE7, where the type of createElement is "object".
+      // For this reason, we cannot call apply() as Object is not a Function.
+      return document.createElement(arguments[0]);
+    } else if (isSVG) {
+      return document.createElementNS.call(document, 'http://www.w3.org/2000/svg', arguments[0]);
+    } else {
+      return document.createElement.apply(document, arguments);
+    }
+  }
+
+  module.exports = createElement;
+
+
+},{"./isSVG.js":17}],8:[function(require,module,exports){
+
+  /**
+   * cssToDOM takes a kebab-case string and converts it to camelCase
+   * e.g. box-sizing -> boxSizing
+   *
+   * @access private
+   * @function cssToDOM
+   * @param {string} name - String name of kebab-case prop we want to convert
+   * @returns {string} The camelCase version of the supplied name
+   */
+
+  function cssToDOM(name) {
+    return name.replace(/([a-z])-([a-z])/g, function(str, m1, m2) {
+      return m1 + m2.toUpperCase();
+    }).replace(/^-/, '');
+  }
+  module.exports = cssToDOM;
+
+
+},{}],9:[function(require,module,exports){
+var ModernizrProto = require('./ModernizrProto.js');
+var omPrefixes = require('./omPrefixes.js');
+  var cssomPrefixes = (ModernizrProto._config.usePrefixes ? omPrefixes.split(' ') : []);
+  ModernizrProto._cssomPrefixes = cssomPrefixes;
+  module.exports = cssomPrefixes;
+
+
+},{"./ModernizrProto.js":3,"./omPrefixes.js":21}],10:[function(require,module,exports){
 
   /**
    * docElement is a convenience wrapper to grab the root element of the document
@@ -105,7 +252,183 @@ var tests = require('./tests.js');
   module.exports = docElement;
 
 
-},{}],6:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
+var ModernizrProto = require('./ModernizrProto.js');
+var omPrefixes = require('./omPrefixes.js');
+  /**
+   * List of JavaScript DOM values used for tests
+   *
+   * @memberof Modernizr
+   * @name Modernizr._domPrefixes
+   * @optionName Modernizr._domPrefixes
+   * @optionProp domPrefixes
+   * @access public
+   * @example
+   *
+   * Modernizr._domPrefixes is exactly the same as [_prefixes](#modernizr-_prefixes), but rather
+   * than kebab-case properties, all properties are their Capitalized variant
+   *
+   * ```js
+   * Modernizr._domPrefixes === [ "Moz", "O", "ms", "Webkit" ];
+   * ```
+   */
+
+  var domPrefixes = (ModernizrProto._config.usePrefixes ? omPrefixes.toLowerCase().split(' ') : []);
+  ModernizrProto._domPrefixes = domPrefixes;
+  module.exports = domPrefixes;
+
+
+},{"./ModernizrProto.js":3,"./omPrefixes.js":21}],12:[function(require,module,exports){
+
+  /**
+   * domToCSS takes a camelCase string and converts it to kebab-case
+   * e.g. boxSizing -> box-sizing
+   *
+   * @access private
+   * @function domToCSS
+   * @param {string} name - String name of camelCase prop we want to convert
+   * @returns {string} The kebab-case version of the supplied name
+   */
+
+  function domToCSS(name) {
+    return name.replace(/([A-Z])/g, function(str, m1) {
+      return '-' + m1.toLowerCase();
+    }).replace(/^ms-/, '-ms-');
+  }
+  module.exports = domToCSS;
+
+
+},{}],13:[function(require,module,exports){
+
+  /**
+   * fnBind is a super small [bind](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind) polyfill.
+   *
+   * @access private
+   * @function fnBind
+   * @param {function} fn - a function you want to change `this` reference to
+   * @param {object} that - the `this` you want to call the function with
+   * @returns {function} The wrapped version of the supplied function
+   */
+
+  function fnBind(fn, that) {
+    return function() {
+      return fn.apply(that, arguments);
+    };
+  }
+
+  module.exports = fnBind;
+
+
+},{}],14:[function(require,module,exports){
+var createElement = require('./createElement.js');
+var isSVG = require('./isSVG.js');
+  /**
+   * getBody returns the body of a document, or an element that can stand in for
+   * the body if a real body does not exist
+   *
+   * @access private
+   * @function getBody
+   * @returns {HTMLElement|SVGElement} Returns the real body of a document, or an
+   * artificially created element that stands in for the body
+   */
+
+  function getBody() {
+    // After page load injecting a fake body doesn't work so check if body exists
+    var body = document.body;
+
+    if (!body) {
+      // Can't use the real body create a fake one.
+      body = createElement(isSVG ? 'svg' : 'body');
+      body.fake = true;
+    }
+
+    return body;
+  }
+
+  module.exports = getBody;
+
+
+},{"./createElement.js":7,"./isSVG.js":17}],15:[function(require,module,exports){
+var ModernizrProto = require('./ModernizrProto.js');
+var docElement = require('./docElement.js');
+var createElement = require('./createElement.js');
+var getBody = require('./getBody.js');
+  /**
+   * injectElementWithStyles injects an element with style element and some CSS rules
+   *
+   * @access private
+   * @function injectElementWithStyles
+   * @param {string} rule - String representing a css rule
+   * @param {function} callback - A function that is used to test the injected element
+   * @param {number} [nodes] - An integer representing the number of additional nodes you want injected
+   * @param {string[]} [testnames] - An array of strings that are used as ids for the additional nodes
+   * @returns {boolean}
+   */
+
+  function injectElementWithStyles(rule, callback, nodes, testnames) {
+    var mod = 'modernizr';
+    var style;
+    var ret;
+    var node;
+    var docOverflow;
+    var div = createElement('div');
+    var body = getBody();
+
+    if (parseInt(nodes, 10)) {
+      // In order not to give false positives we create a node for each test
+      // This also allows the method to scale for unspecified uses
+      while (nodes--) {
+        node = createElement('div');
+        node.id = testnames ? testnames[nodes] : mod + (nodes + 1);
+        div.appendChild(node);
+      }
+    }
+
+    style = createElement('style');
+    style.type = 'text/css';
+    style.id = 's' + mod;
+
+    // IE6 will false positive on some tests due to the style element inside the test div somehow interfering offsetHeight, so insert it into body or fakebody.
+    // Opera will act all quirky when injecting elements in documentElement when page is served as xml, needs fakebody too. #270
+    (!body.fake ? div : body).appendChild(style);
+    body.appendChild(div);
+
+    if (style.styleSheet) {
+      style.styleSheet.cssText = rule;
+    } else {
+      style.appendChild(document.createTextNode(rule));
+    }
+    div.id = mod;
+
+    if (body.fake) {
+      //avoid crashing IE8, if background image is used
+      body.style.background = '';
+      //Safari 5.13/5.1.4 OSX stops loading if ::-webkit-scrollbar is used and scrollbars are visible
+      body.style.overflow = 'hidden';
+      docOverflow = docElement.style.overflow;
+      docElement.style.overflow = 'hidden';
+      docElement.appendChild(body);
+    }
+
+    ret = callback(div, rule);
+    // If this is done after page load we don't want to remove the body so check if body exists
+    if (body.fake) {
+      body.parentNode.removeChild(body);
+      docElement.style.overflow = docOverflow;
+      // Trigger layout so kinetic scrolling isn't disabled in iOS6+
+      docElement.offsetHeight;
+    } else {
+      div.parentNode.removeChild(div);
+    }
+
+    return !!ret;
+
+  }
+
+  module.exports = injectElementWithStyles;
+
+
+},{"./ModernizrProto.js":3,"./createElement.js":7,"./docElement.js":10,"./getBody.js":14}],16:[function(require,module,exports){
 
   /**
    * is returns a boolean if the typeof an obj is exactly type.
@@ -123,7 +446,7 @@ var tests = require('./tests.js');
   module.exports = is;
 
 
-},{}],7:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 var docElement = require('./docElement.js');
   /**
    * A convenience helper to check if the document we are running in is an SVG document
@@ -136,7 +459,239 @@ var docElement = require('./docElement.js');
   module.exports = isSVG;
 
 
-},{"./docElement.js":5}],8:[function(require,module,exports){
+},{"./docElement.js":10}],18:[function(require,module,exports){
+var Modernizr = require('./Modernizr.js');
+var modElem = require('./modElem.js');
+  var mStyle = {
+    style : modElem.elem.style
+  };
+
+  // kill ref for gc, must happen before mod.elem is removed, so we unshift on to
+  // the front of the queue.
+  Modernizr._q.unshift(function() {
+    delete mStyle.style;
+  });
+
+  module.exports = mStyle;
+
+
+},{"./Modernizr.js":2,"./modElem.js":19}],19:[function(require,module,exports){
+var Modernizr = require('./Modernizr.js');
+var createElement = require('./createElement.js');
+  /**
+   * Create our "modernizr" element that we do most feature tests on.
+   *
+   * @access private
+   */
+
+  var modElem = {
+    elem : createElement('modernizr')
+  };
+
+  // Clean up this element
+  Modernizr._q.push(function() {
+    delete modElem.elem;
+  });
+
+  module.exports = modElem;
+
+
+},{"./Modernizr.js":2,"./createElement.js":7}],20:[function(require,module,exports){
+var injectElementWithStyles = require('./injectElementWithStyles.js');
+var domToCSS = require('./domToCSS.js');
+  /**
+   * nativeTestProps allows for us to use native feature detection functionality if available.
+   * some prefixed form, or false, in the case of an unsupported rule
+   *
+   * @access private
+   * @function nativeTestProps
+   * @param {array} props - An array of property names
+   * @param {string} value - A string representing the value we want to check via @supports
+   * @returns {boolean|undefined} A boolean when @supports exists, undefined otherwise
+   */
+
+  // Accepts a list of property names and a single value
+  // Returns `undefined` if native detection not available
+  function nativeTestProps (props, value) {
+    var i = props.length;
+    // Start with the JS API: http://www.w3.org/TR/css3-conditional/#the-css-interface
+    if ('CSS' in window && 'supports' in window.CSS) {
+      // Try every prefixed variant of the property
+      while (i--) {
+        if (window.CSS.supports(domToCSS(props[i]), value)) {
+          return true;
+        }
+      }
+      return false;
+    }
+    // Otherwise fall back to at-rule (for Opera 12.x)
+    else if ('CSSSupportsRule' in window) {
+      // Build a condition string for every prefixed variant
+      var conditionText = [];
+      while (i--) {
+        conditionText.push('(' + domToCSS(props[i]) + ':' + value + ')');
+      }
+      conditionText = conditionText.join(' or ');
+      return injectElementWithStyles('@supports (' + conditionText + ') { #modernizr { position: absolute; } }', function(node) {
+        return getComputedStyle(node, null).position == 'absolute';
+      });
+    }
+    return undefined;
+  }
+  module.exports = nativeTestProps;
+
+
+},{"./domToCSS.js":12,"./injectElementWithStyles.js":15}],21:[function(require,module,exports){
+
+  /**
+   * If the browsers follow the spec, then they would expose vendor-specific style as:
+   *   elem.style.WebkitBorderRadius
+   * instead of something like the following, which would be technically incorrect:
+   *   elem.style.webkitBorderRadius
+
+   * Webkit ghosts their properties in lowercase but Opera & Moz do not.
+   * Microsoft uses a lowercase `ms` instead of the correct `Ms` in IE8+
+   *   erik.eae.net/archives/2008/03/10/21.48.10/
+
+   * More here: github.com/Modernizr/Modernizr/issues/issue/21
+   *
+   * @access private
+   * @returns {string} The string representing the vendor-specific style properties
+   */
+
+  var omPrefixes = 'Moz O ms Webkit';
+  module.exports = omPrefixes;
+
+
+},{}],22:[function(require,module,exports){
+var ModernizrProto = require('./ModernizrProto.js');
+var testPropsAll = require('./testPropsAll.js');
+var cssToDOM = require('./cssToDOM.js');
+var atRule = require('./atRule.js');
+  /**
+   * prefixed returns the prefixed or nonprefixed property name variant of your input
+   *
+   * @memberof Modernizr
+   * @name Modernizr.prefixed
+   * @optionName Modernizr.prefixed()
+   * @optionProp prefixed
+   * @access public
+   * @function prefixed
+   * @param {string} prop - String name of the property to test for
+   * @param {object} [obj]- An object to test for the prefixed properties on
+   * @returns {string|false} The string representing the (possibly prefixed) valid
+   * version of the property, or `false` when it is unsupported.
+   * @example
+   *
+   * Modernizr.prefixed takes a string css value in the DOM style camelCase (as
+   * opposed to the css style kebab-case) form and returns the (possibly prefixed)
+   * version of that property that the browser actually supports.
+   *
+   * For example, in older Firefox...
+   * ```js
+   * prefixed('boxSizing')
+   * ```
+   * returns 'MozBoxSizing'
+   *
+   * In newer Firefox, as well as any other browser that support the unprefixed
+   * version would simply return `boxSizing`. Any browser that does not support
+   * the property at all, it will return `false`.
+   *
+   * By default, prefixed is checked against a DOM element. If you want to check
+   * for a property on another object, just pass it as a second argument
+   *
+   * ```js
+   * var rAF = prefixed('requestAnimationFrame', window);
+   *
+   * raf(function() {
+   *  renderFunction();
+   * })
+   * ```
+   *
+   * Note that this will return _the actual function_ - not the name of the function.
+   * If you need the actual name of the property, pass in `false` as a third argument
+   *
+   * ```js
+   * var rAFProp = prefixed('requestAnimationFrame', window, false);
+   *
+   * rafProp === 'WebkitRequestAnimationFrame' // in older webkit
+   * ```
+   *
+   * One common use case for prefixed is if you're trying to determine which transition
+   * end event to bind to, you might do something like...
+   * ```js
+   * var transEndEventNames = {
+   *     'WebkitTransition' : 'webkitTransitionEnd', * Saf 6, Android Browser
+   *     'MozTransition'    : 'transitionend',       * only for FF < 15
+   *     'transition'       : 'transitionend'        * IE10, Opera, Chrome, FF 15+, Saf 7+
+   * };
+   *
+   * var transEndEventName = transEndEventNames[ Modernizr.prefixed('transition') ];
+   * ```
+   *
+   * If you want a similar lookup, but in kebab-case, you can use [prefixedCSS](#modernizr-prefixedcss).
+   */
+
+  var prefixed = ModernizrProto.prefixed = function(prop, obj, elem) {
+    if (prop.indexOf('@') === 0) {
+      return atRule(prop);
+    }
+
+    if (prop.indexOf('-') != -1) {
+      // Convert kebab-case to camelCase
+      prop = cssToDOM(prop);
+    }
+    if (!obj) {
+      return testPropsAll(prop, 'pfx');
+    } else {
+      // Testing DOM property e.g. Modernizr.prefixed('requestAnimationFrame', window) // 'mozRequestAnimationFrame'
+      return testPropsAll(prop, obj, elem);
+    }
+  };
+
+  module.exports = prefixed;
+
+
+},{"./ModernizrProto.js":3,"./atRule.js":4,"./cssToDOM.js":8,"./testPropsAll.js":28}],23:[function(require,module,exports){
+var ModernizrProto = require('./ModernizrProto.js');
+var prefixed = require('./prefixed.js');
+var domToCSS = require('./domToCSS.js');
+  /**
+   * prefixedCSS is just like [prefixed](#modernizr-prefixed), but the returned values are in
+   * kebab-case (e.g. `box-sizing`) rather than camelCase (boxSizing).
+   *
+   * @memberof Modernizr
+   * @name Modernizr.prefixedCSS
+   * @optionName Modernizr.prefixedCSS()
+   * @optionProp prefixedCSS
+   * @access public
+   * @function prefixedCSS
+   * @param {string} prop - String name of the property to test for
+   * @returns {string|false} The string representing the (possibly prefixed)
+   * valid version of the property, or `false` when it is unsupported.
+   * @example
+   *
+   * `Modernizr.prefixedCSS` is like `Modernizr.prefixed`, but returns the result
+   * in hyphenated form
+   *
+   * ```js
+   * Modernizr.prefixedCSS('transition') // '-moz-transition' in old Firefox
+   * ```
+   *
+   * Since it is only useful for CSS style properties, it can only be tested against
+   * an HTMLElement.
+   *
+   * Properties can be passed as both the DOM style camelCase or CSS style kebab-case.
+   */
+
+  var prefixedCSS = ModernizrProto.prefixedCSS = function(prop) {
+    var prefixedProp = prefixed(prop);
+    return prefixedProp && domToCSS(prefixedProp);
+  };
+  module.exports = prefixedCSS;
+
+
+},{"./ModernizrProto.js":3,"./domToCSS.js":12,"./prefixed.js":22}],24:[function(require,module,exports){
 var Modernizr = require('./Modernizr.js');
 var docElement = require('./docElement.js');
 var isSVG = require('./isSVG.js');
@@ -176,7 +731,230 @@ var isSVG = require('./isSVG.js');
   module.exports = setClasses;
 
 
-},{"./Modernizr.js":2,"./docElement.js":5,"./isSVG.js":7}],9:[function(require,module,exports){
+},{"./Modernizr.js":2,"./docElement.js":10,"./isSVG.js":17}],25:[function(require,module,exports){
+var ModernizrProto = require('./ModernizrProto.js');
+var testPropsAll = require('./testPropsAll.js');
+  /**
+   * testAllProps determines whether a given CSS property is supported in the browser
+   *
+   * @memberof Modernizr
+   * @name Modernizr.testAllProps
+   * @optionName Modernizr.testAllProps()
+   * @optionProp testAllProps
+   * @access public
+   * @function testAllProps
+   * @param {string} prop - String naming the property to test (either camelCase or kebab-case)
+   * @param {string} [value] - String of the value to test
+   * @param {boolean} [skipValueTest=false] - Whether to skip testing that the value is supported when using non-native detection
+   * @example
+   *
+   * testAllProps determines whether a given CSS property, in some prefixed form,
+   * is supported by the browser.
+   *
+   * ```js
+   * testAllProps('boxSizing')  // true
+   * ```
+   *
+   * It can optionally be given a CSS value in string form to test if a property
+   * value is valid
+   *
+   * ```js
+   * testAllProps('display', 'block') // true
+   * testAllProps('display', 'penguin') // false
+   * ```
+   *
+   * A boolean can be passed as a third parameter to skip the value check when
+   * native detection (@supports) isn't available.
+   *
+   * ```js
+   * testAllProps('shapeOutside', 'content-box', true);
+   * ```
+   */
+
+  function testAllProps (prop, value, skipValueTest) {
+    return testPropsAll(prop, undefined, undefined, value, skipValueTest);
+  }
+  ModernizrProto.testAllProps = testAllProps;
+  module.exports = testAllProps;
+
+
+},{"./ModernizrProto.js":3,"./testPropsAll.js":28}],26:[function(require,module,exports){
+var is = require('./is.js');
+var fnBind = require('./fnBind.js');
+  /**
+   * testDOMProps is a generic DOM property test; if a browser supports
+   *   a certain property, it won't return undefined for it.
+   */
+  function testDOMProps(props, obj, elem) {
+    var item;
+
+    for (var i in props) {
+      if (props[i] in obj) {
+
+        // return the property name as a string
+        if (elem === false) {
+          return props[i];
+        }
+
+        item = obj[props[i]];
+
+        // let's bind a function
+        if (is(item, 'function')) {
+          // bind to obj unless overriden
+          return fnBind(item, elem || obj);
+        }
+
+        // return the unbound function or obj or value
+        return item;
+      }
+    }
+    return false;
+  }
+
+  module.exports = testDOMProps;
+
+
+},{"./fnBind.js":13,"./is.js":16}],27:[function(require,module,exports){
+var contains = require('./contains.js');
+var mStyle = require('./mStyle.js');
+var createElement = require('./createElement.js');
+var nativeTestProps = require('./nativeTestProps.js');
+var is = require('./is.js');
+var cssToDOM = require('./cssToDOM.js');
+  // testProps is a generic CSS / DOM property test.
+
+  // In testing support for a given CSS property, it's legit to test:
+  //    `elem.style[styleName] !== undefined`
+  // If the property is supported it will return an empty string,
+  // if unsupported it will return undefined.
+
+  // We'll take advantage of this quick test and skip setting a style
+  // on our modernizr element, but instead just testing undefined vs
+  // empty string.
+
+  // Property names can be provided in either camelCase or kebab-case.
+
+  function testProps(props, prefixed, value, skipValueTest) {
+    skipValueTest = is(skipValueTest, 'undefined') ? false : skipValueTest;
+
+    // Try native detect first
+    if (!is(value, 'undefined')) {
+      var result = nativeTestProps(props, value);
+      if (!is(result, 'undefined')) {
+        return result;
+      }
+    }
+
+    // Otherwise do it properly
+    var afterInit, i, propsLength, prop, before;
+
+    // If we don't have a style element, that means we're running async or after
+    // the core tests, so we'll need to create our own elements to use
+
+    // inside of an SVG element, in certain browsers, the `style` element is only
+    // defined for valid tags. Therefore, if `modernizr` does not have one, we
+    // fall back to a less used element and hope for the best.
+    var elems = ['modernizr', 'tspan'];
+    while (!mStyle.style) {
+      afterInit = true;
+      mStyle.modElem = createElement(elems.shift());
+      mStyle.style = mStyle.modElem.style;
+    }
+
+    // Delete the objects if we created them.
+    function cleanElems() {
+      if (afterInit) {
+        delete mStyle.style;
+        delete mStyle.modElem;
+      }
+    }
+
+    propsLength = props.length;
+    for (i = 0; i < propsLength; i++) {
+      prop = props[i];
+      before = mStyle.style[prop];
+
+      if (contains(prop, '-')) {
+        prop = cssToDOM(prop);
+      }
+
+      if (mStyle.style[prop] !== undefined) {
+
+        // If value to test has been passed in, do a set-and-check test.
+        // 0 (integer) is a valid property value, so check that `value` isn't
+        // undefined, rather than just checking it's truthy.
+        if (!skipValueTest && !is(value, 'undefined')) {
+
+          // Needs a try catch block because of old IE. This is slow, but will
+          // be avoided in most cases because `skipValueTest` will be used.
+          try {
+            mStyle.style[prop] = value;
+          } catch (e) {}
+
+          // If the property value has changed, we assume the value used is
+          // supported. If `value` is empty string, it'll fail here (because
+          // it hasn't changed), which matches how browsers have implemented
+          // CSS.supports()
+          if (mStyle.style[prop] != before) {
+            cleanElems();
+            return prefixed == 'pfx' ? prop : true;
+          }
+        }
+        // Otherwise just return true, or the property name if this is a
+        // `prefixed()` call
+        else {
+          cleanElems();
+          return prefixed == 'pfx' ? prop : true;
+        }
+      }
+    }
+    cleanElems();
+    return false;
+  }
+
+  module.exports = testProps;
+
+
+},{"./contains.js":6,"./createElement.js":7,"./cssToDOM.js":8,"./is.js":16,"./mStyle.js":18,"./nativeTestProps.js":20}],28:[function(require,module,exports){
+var ModernizrProto = require('./ModernizrProto.js');
+var cssomPrefixes = require('./cssomPrefixes.js');
+var is = require('./is.js');
+var testProps = require('./testProps.js');
+var domPrefixes = require('./domPrefixes.js');
+var testDOMProps = require('./testDOMProps.js');
+  /**
+   * testPropsAll tests a list of DOM properties we want to check against.
+   * We specify literally ALL possible (known and/or likely) properties on
+   * the element including the non-vendor prefixed one, for forward-
+   * compatibility.
+   */
+  function testPropsAll(prop, prefixed, elem, value, skipValueTest) {
+
+    var ucProp = prop.charAt(0).toUpperCase() + prop.slice(1),
+    props = (prop + ' ' + cssomPrefixes.join(ucProp + ' ') + ucProp).split(' ');
+
+    // did they call .prefixed('boxSizing') or are we just testing a prop?
+    if (is(prefixed, 'string') || is(prefixed, 'undefined')) {
+      return testProps(props, prefixed, value, skipValueTest);
+
+      // otherwise, they called .prefixed('requestAnimationFrame', window[, elem])
+    } else {
+      props = (prop + ' ' + (domPrefixes).join(ucProp + ' ') + ucProp).split(' ');
+      return testDOMProps(props, prefixed, elem);
+    }
+  }
+
+  // Modernizr.testAllProps() investigates whether a given style property,
+  // or any of its vendor-prefixed variants, is recognized
+  //
+  // Note that the property names must be provided in the camelCase variant.
+  // Modernizr.testAllProps('boxSizing')
+  ModernizrProto.testAllProps = testPropsAll;
+
+  module.exports = testPropsAll;
+
+
+},{"./ModernizrProto.js":3,"./cssomPrefixes.js":9,"./domPrefixes.js":11,"./is.js":16,"./testDOMProps.js":26,"./testProps.js":27}],29:[function(require,module,exports){
 var tests = require('./tests.js');
 var Modernizr = require('./Modernizr.js');
 var classes = require('./classes.js');
@@ -253,13 +1031,32 @@ var is = require('./is.js');
   module.exports = testRunner;
 
 
-},{"./Modernizr.js":2,"./classes.js":4,"./is.js":6,"./tests.js":10}],10:[function(require,module,exports){
+},{"./Modernizr.js":2,"./classes.js":5,"./is.js":16,"./tests.js":30}],30:[function(require,module,exports){
 
   var tests = [];
   module.exports = tests;
 
 
-},{}],11:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
+/*!
+{
+  "name": "CSS Transforms",
+  "property": "csstransforms",
+  "caniuse": "transforms2d",
+  "tags": ["css"]
+}
+!*/
+var Modernizr = require('./../../lib/Modernizr.js');
+var testAllProps = require('./../../lib/testAllProps.js');
+  Modernizr.addTest('csstransforms', function() {
+    // Android < 3.0 is buggy, so we sniff and blacklist
+    // http://git.io/hHzL7w
+    return navigator.userAgent.indexOf('Android 2.') === -1 &&
+           testAllProps('transform', 'scale(1)', true);
+  });
+
+
+},{"./../../lib/Modernizr.js":2,"./../../lib/testAllProps.js":25}],32:[function(require,module,exports){
 /*!
 {
   "name": "classList",
@@ -278,7 +1075,7 @@ var docElement = require('./../../lib/docElement.js');
   Modernizr.addTest('classlist', 'classList' in docElement);
 
 
-},{"./../../lib/Modernizr.js":2,"./../../lib/docElement.js":5}],12:[function(require,module,exports){
+},{"./../../lib/Modernizr.js":2,"./../../lib/docElement.js":10}],33:[function(require,module,exports){
 /*!
 {
   "name": "ES6 Promises",
@@ -321,7 +1118,7 @@ var Modernizr = require('./../../lib/Modernizr.js');
   });
 
 
-},{"./../../lib/Modernizr.js":2}],13:[function(require,module,exports){
+},{"./../../lib/Modernizr.js":2}],34:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -414,7 +1211,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],14:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 "use strict";
 require('./modules/polyfill-checks.js');
 var lightbox = {
@@ -428,7 +1225,7 @@ window.lightbox = lightbox;
 
 
 
-},{"./modules/events.js":15,"./modules/imgCache.js":16,"./modules/polyfill-checks.js":17,"./modules/translate.js":18,"./modules/util.js":19}],15:[function(require,module,exports){
+},{"./modules/events.js":36,"./modules/imgCache.js":37,"./modules/polyfill-checks.js":38,"./modules/translate.js":39,"./modules/util.js":40}],36:[function(require,module,exports){
 /**
  * lightbox events / event  handlers
  *
@@ -614,7 +1411,7 @@ events.clear = function(){
 
 module.exports = events;
 
-},{}],16:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 "use strict";
 var imgCache = function(){
 
@@ -654,7 +1451,8 @@ var imgCache = function(){
 
 module.exports = imgCache();
 
-},{}],17:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
+/*globals Modernizr*/
 /*
 The lightbox relies on serveral features that might not be widely supported.
 So let's try and make is flexible
@@ -664,19 +1462,22 @@ So let's try and make is flexible
 module.exports = (function(){
   require('browsernizr/test/dom/classlist.js');
   require('browsernizr/test/es6/promises.js');
-  var Modernizr = require('browsernizr');
+  require('browsernizr/lib/prefixedCSS.js');
+  require('browsernizr/test/css/transforms.js');
 
-  if(!Modernizr.classlist){
+  window.Modernizr = require('browsernizr');
+
+  if(Modernizr.classlist === false){
     require('classlist-polyfill');
   }
 
-  if(!Modernizr.promise){
+  if(Modernizr.promise === false){
     window.Promise = require('es6-promise').Promise;
   }
 
 })();
 
-},{"browsernizr":1,"browsernizr/test/dom/classlist.js":11,"browsernizr/test/es6/promises.js":12,"classlist-polyfill":"classList","es6-promise":"promise"}],18:[function(require,module,exports){
+},{"browsernizr":1,"browsernizr/lib/prefixedCSS.js":23,"browsernizr/test/css/transforms.js":31,"browsernizr/test/dom/classlist.js":32,"browsernizr/test/es6/promises.js":33,"classlist-polyfill":"classList","es6-promise":"promise"}],39:[function(require,module,exports){
 /*
 functions that move the image around the lightbox
 
@@ -715,30 +1516,43 @@ var translate = function(image){
     timedFunctions.push(timedFn);
   }
   return{
-    image : image,
     start: function(){
       waterfall();
       return done;
     },
-    
-    test1: function(){
-      stack(1500, function(){
-        console.log("test1");
+    slideRight: function(){
+      var idx;
+      stack(0, function(){
+        image.classList.add('pictureSlideRight');
+        idx = image.dataset.idx;
+      });
+      stack(325, function(){
+        image.classList.remove('pictureSlideRight');
+        image.classList.add('hidden');
+        image.style.transform = 'translateX(0)';
+        //lightbox.navigate.prevImage(idx);
       });
       return this;
     },
-    test2: function(){
-      stack(600, function(){
-        console.log("test2");
+    slideLeft: function(){
+      var idx;
+      stack(0, function(){
+        image.classList.add('pictureSlideLeft');
+        idx = image.dataset.idx;
       });
-      return this;
+      stack(325, function(){
+        image.classList.remove('pictureSlideLeft');
+        image.classList.add('hidden');
+        image.style.transform = 'translateX(0)';
+        //lightbox.navigate.nextImage(idx);
+      });
     }
   };
 };
 
 module.exports = translate;
 
-},{}],19:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 /**
  * utilities functions, top level selector, etc
  */
@@ -2017,4 +2831,4 @@ if ("document" in window.self) {
 
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":13}]},{},[14]);
+},{"_process":34}]},{},[35]);

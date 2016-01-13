@@ -36,23 +36,36 @@ var translate = function(image){
     timedFunctions.push(timedFn);
   }
   return{
-    image : image,
     start: function(){
       waterfall();
       return done;
     },
-    
-    test1: function(){
-      stack(1500, function(){
-        console.log("test1");
+    slideRight: function(){
+      var idx;
+      stack(0, function(){
+        image.classList.add('pictureSlideRight');
+        idx = image.dataset.idx;
+      });
+      stack(325, function(){
+        image.classList.remove('pictureSlideRight');
+        image.classList.add('hidden');
+        image.style.transform = 'translateX(0)';
+        //lightbox.navigate.prevImage(idx);
       });
       return this;
     },
-    test2: function(){
-      stack(600, function(){
-        console.log("test2");
+    slideLeft: function(){
+      var idx;
+      stack(0, function(){
+        image.classList.add('pictureSlideLeft');
+        idx = image.dataset.idx;
       });
-      return this;
+      stack(325, function(){
+        image.classList.remove('pictureSlideLeft');
+        image.classList.add('hidden');
+        image.style.transform = 'translateX(0)';
+        //lightbox.navigate.nextImage(idx);
+      });
     }
   };
 };
