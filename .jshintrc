@@ -12,6 +12,7 @@
     "trailing": true,
     "smarttabs": true,
     "browser" : true,
+    "laxcomma" : true,
     "globals"      : {
       "Promise"   : true
     }

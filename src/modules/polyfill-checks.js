@@ -8,8 +8,6 @@ So let's try and make is flexible
 module.exports = (function(){
   require('browsernizr/test/dom/classlist.js');
   require('browsernizr/test/es6/promises.js');
-  require('browsernizr/lib/prefixedCSS.js');
-  require('browsernizr/test/css/transforms.js');
 
   window.Modernizr = require('browsernizr');
 

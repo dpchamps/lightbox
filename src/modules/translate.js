@@ -28,7 +28,7 @@ var translate = function(image){
           waterfall();
         });
       }else{
-        complete();
+        complete(image);
       }
   }
   function stack(t,fn){
@@ -66,7 +66,7 @@ var translate = function(image){
     start: function(){
       waterfall();
       return done;
-    },
+    }
   };
 };
 

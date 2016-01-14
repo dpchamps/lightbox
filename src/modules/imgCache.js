@@ -21,8 +21,8 @@ var imgCache = function(){
     'cacheImages' : function(images){
       _complete = false;
       var pArray = [];
-      for(var i = 0; i < images.length; i++){
-          pArray.push( loadImage(images[i]) );
+      for(var idx in images){
+          pArray.push( loadImage(images[idx]) );
       }
       Promise.all(pArray).then(function(){
         //the images have been cached
@@ -31,6 +31,9 @@ var imgCache = function(){
     },
     'isComplete' : function(){
       return _complete;
+    },
+    'loadImage' : function(src){
+      return loadImage(src);
     }
   };
 };
