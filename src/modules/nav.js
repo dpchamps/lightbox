@@ -24,8 +24,10 @@ var nav = function() {
   //add events
   lightbox.events.add(function thumbTap(e){
     e.stopPropagation();
-    var idx = this.dataset.idx,
+    var img = this.getElementsByTagName('img')[0];
+    var idx = img.dataset.idx,
       src = imageSet[idx];
+    console.log(idx, src, img, this);
     lightboxEnter();
     cache.loadImage(src).then(function(image){
       if(! cache.isComplete()){

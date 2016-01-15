@@ -22,6 +22,9 @@ var imgCache = function(){
       _complete = false;
       var pArray = [];
       for(var idx in images){
+          if(idx === 'last'){
+            continue;
+          }
           pArray.push( loadImage(images[idx]) );
       }
       Promise.all(pArray).then(function(){

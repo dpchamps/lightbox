@@ -423,8 +423,12 @@ var lightbox = {
   imgCache: require('./modules/imgCache.js'),
   translate: require('./modules/translate.js'),
   nav: require('./modules/nav.js'),
+  bindEvents : require('./scripts/bindEvents'),
+  controls : require('./modules/controls.js'),
   init : function(){
+    this.controls = this.controls();
     this.nav();
+    this.bindEvents();
   }
 };
 
@@ -432,7 +436,46 @@ window.lightbox = lightbox;
 
 
 
-},{"./modules/events.js":15,"./modules/imgCache.js":16,"./modules/nav.js":17,"./modules/polyfill-checks.js":18,"./modules/translate.js":19,"./modules/util.js":20}],15:[function(require,module,exports){
+},{"./modules/controls.js":15,"./modules/events.js":16,"./modules/imgCache.js":17,"./modules/nav.js":18,"./modules/polyfill-checks.js":19,"./modules/translate.js":20,"./modules/util.js":21,"./scripts/bindEvents":22}],15:[function(require,module,exports){
+var controls = function(){
+  var
+      modal = document.createElement('div')
+    , spinner = document.createElement('div')
+    , spinnerCube1 = "<div class='cube1'></div>"
+    , spinnerCube2 = "<div class='cube2'></div>"
+    , controls = document.createElement('div')
+    , controlsRemove = "<span class='glyphicon glyphicon-remove lightbox-controls-remove'></span>"
+    , controlsLeft = "<span class='glyphicon glyphicon-chevron-left hidden-xs lightbox-controls-left'></span>"
+    , controlsRight = "<span class='glyphicon glyphicon-chevron-right hidden-xs lightbox-controls-right'></span>";
+
+  spinner.innerHTML = spinnerCube1+spinnerCube2;
+  spinner.classList.add('spinner');
+
+  controls.innerHTML = controlsRemove+controlsLeft+controlsRight;
+  controls.classList.add('lightbox-controls');
+
+  modal.appendChild(spinner);
+  modal.appendChild(controls);
+  modal.id = "lightbox-modal";
+  document.body.appendChild(modal);
+
+  var
+      _modal = document.getElementById('lightbox-modal')
+    , _left = document.getElementsByClassName('lightbox-controls-left')[0]
+    , _right = document.getElementsByClassName('lightbox-controls-right')[0]
+    , _remove  = document.getElementsByClassName('lightbox-controls-remove')[0];
+  return {
+    modal : _modal,
+    left : _left,
+    right: _right,
+    remove: _remove
+  }
+};
+
+module.exports = controls;
+
+
+},{}],16:[function(require,module,exports){
 /**
  * lightbox events / event  handlers
  *
@@ -618,7 +661,7 @@ events.clear = function(){
 
 module.exports = events;
 
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 "use strict";
 var imgCache = function(){
 
@@ -643,6 +686,9 @@ var imgCache = function(){
       _complete = false;
       var pArray = [];
       for(var idx in images){
+          if(idx === 'last'){
+            continue;
+          }
           pArray.push( loadImage(images[idx]) );
       }
       Promise.all(pArray).then(function(){
@@ -661,7 +707,7 @@ var imgCache = function(){
 
 module.exports = imgCache();
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 
 
 "use strict";
@@ -688,8 +734,10 @@ var nav = function() {
   //add events
   lightbox.events.add(function thumbTap(e){
     e.stopPropagation();
-    var idx = this.dataset.idx,
+    var img = this.getElementsByTagName('img')[0];
+    var idx = img.dataset.idx,
       src = imageSet[idx];
+    console.log(idx, src, img, this);
     lightboxEnter();
     cache.loadImage(src).then(function(image){
       if(! cache.isComplete()){
@@ -848,7 +896,7 @@ var nav = function() {
 
 module.exports = nav;
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 /*globals Modernizr*/
 /*
 The lightbox relies on serveral features that might not be widely supported.
@@ -872,7 +920,7 @@ module.exports = (function(){
 
 })();
 
-},{"browsernizr":1,"browsernizr/test/dom/classlist.js":11,"browsernizr/test/es6/promises.js":12,"classlist-polyfill":"classList","es6-promise":"promise"}],19:[function(require,module,exports){
+},{"browsernizr":1,"browsernizr/test/dom/classlist.js":11,"browsernizr/test/es6/promises.js":12,"classlist-polyfill":"classList","es6-promise":"promise"}],20:[function(require,module,exports){
 /*
 functions that move the image around the lightbox
 
@@ -947,7 +995,7 @@ var translate = function(image){
 
 module.exports = translate;
 
-},{}],20:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 /**
  * utilities functions, top level selector, etc
  */
@@ -1013,6 +1061,27 @@ var util = function(sel){
 };
 
 module.exports = util;
+
+},{}],22:[function(require,module,exports){
+/* globals */
+
+"use strict";
+var bindEvents = function () {
+  if(this === 'undefined'){
+    throw new Error();
+  }
+  var
+      lightbox = this
+    , thumbTap = lightbox.events.get('thumbTap');
+
+  lightbox.util('.thumb').addEvents('tap', thumbTap);
+  lightbox.controls.left.addEventListener('tap', lightbox.nav.prev);
+  lightbox.controls.right.addEventListener('tap', lightbox.nav.next);
+  lightbox.controls.remove.addEventListener('tap', lightbox.nav.exit);
+  lightbox.controls.modal.addEventListener('tap', lightbox.nav.exit);
+};
+
+module.exports = bindEvents;
 
 },{}],"classList":[function(require,module,exports){
 /*
