@@ -77,7 +77,6 @@ var nav = function() {
     //var matrix = getImageTransformMatrix($img, zoomScale, e.clientX, e.clientY);
     //transformImage($img, matrix);
   });
-  console.log(lightbox.events);
   var holdListener = lightbox.events.get('holdListener')
     , pinchListener = lightbox.events.get('pinchListener')
     , holdreleaseListener = lightbox.events.get('holdreleaseListener')

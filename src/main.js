@@ -5,7 +5,10 @@ var lightbox = {
   events : require('./modules/events.js'),
   imgCache: require('./modules/imgCache.js'),
   translate: require('./modules/translate.js'),
-  nav: require('./modules/nav.js')
+  nav: require('./modules/nav.js'),
+  init : function(){
+    this.nav();
+  }
 };
 
 window.lightbox = lightbox;
