@@ -27,7 +27,6 @@ var nav = function() {
     var img = this.getElementsByTagName('img')[0];
     var idx = img.dataset.idx,
       src = imageSet[idx];
-    console.log(idx, src, img, this);
     lightboxEnter();
     cache.loadImage(src).then(function(image){
       if(! cache.isComplete()){
@@ -85,7 +84,6 @@ var nav = function() {
     , disableDefault = lightbox.events.get('disableDefault')
     , scrollWheelListener = lightbox.events.get('scrollWheelListener');
 
-
   function disableDrag(el){
     el.addEventListener('dragstart', disableDefault);
     el.addEventListener('dragend', disableDefault);
@@ -136,13 +134,13 @@ var nav = function() {
   function removeImage(image){
     lightboxModal.removeChild(image);
   }
-  function nextImage(){
+  function nextImage(e){
+    e.stopPropagation();
     var
-        idx = lightboxModal.dataset.idx
-      , curImg = imageSet[idx]
+        idx = parseInt(lightboxModal.dataset.idx)
+      , curImg = lightboxModal.getElementsByTagName('img')[0]
       , nextImg = imageSet[idx+1]
       , newIdx = idx+1;
-
     if(typeof nextImg === 'undefined'){
       nextImg = imageSet[1];
       newIdx=1;
@@ -150,19 +148,19 @@ var nav = function() {
 
     cache.loadImage(nextImg).then(function(image){
       var next = image;
-      lightbox.translate(curImg).slideLeft().start().then(function(){
+      lightbox.animate(curImg).slideLeft().start().then(function(){
         removeImage(curImg);
         addImage(newIdx, next);
       });
     });
   }
-  function prevImage(){
+  function prevImage(e){
+    e.stopPropagation();
     var
-        idx = lightboxModal.dataset.idx
-      , curImg = imageSet[idx]
+        idx = parseInt(lightboxModal.dataset.idx)
+      , curImg = lightboxModal.getElementsByTagName('img')[0]
       , prevImg = imageSet[idx-1]
       , newIdx = idx-1;
-
     if(typeof prevImg === 'undefined'){
       prevImg = imageSet[imageSet.last];
       newIdx = imageSet.last;
@@ -170,7 +168,7 @@ var nav = function() {
 
     cache.loadImage(prevImg).then(function(image){
       var prev = image;
-      lightbox.translate(curImg).slideRight().start().then(function(){
+      lightbox.animate(curImg).slideRight().start().then(function(){
         removeImage(curImg);
         addImage(newIdx, prev);
       });

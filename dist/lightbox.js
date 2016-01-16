@@ -322,6 +322,38 @@ var Modernizr = require('./../../lib/Modernizr.js');
 
 
 },{"./../../lib/Modernizr.js":2}],13:[function(require,module,exports){
+/*!
+  * domready (c) Dustin Diaz 2014 - License MIT
+  */
+!function (name, definition) {
+
+  if (typeof module != 'undefined') module.exports = definition()
+  else if (typeof define == 'function' && typeof define.amd == 'object') define(definition)
+  else this[name] = definition()
+
+}('domready', function () {
+
+  var fns = [], listener
+    , doc = document
+    , hack = doc.documentElement.doScroll
+    , domContentLoaded = 'DOMContentLoaded'
+    , loaded = (hack ? /^loaded|^c/ : /^loaded|^i|^c/).test(doc.readyState)
+
+
+  if (!loaded)
+  doc.addEventListener(domContentLoaded, listener = function () {
+    doc.removeEventListener(domContentLoaded, listener)
+    loaded = 1
+    while (listener = fns.shift()) listener()
+  })
+
+  return function (fn) {
+    loaded ? setTimeout(fn, 0) : fns.push(fn)
+  }
+
+});
+
+},{}],14:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -414,22 +446,26 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 "use strict";
 require('./modules/polyfill-checks.js');
 var lightbox = {
   util : require('./modules/util.js'),
   events : require('./modules/events.js'),
   imgCache: require('./modules/imgCache.js'),
-  translate: require('./modules/translate.js'),
+  animate: require('./modules/animations.js'),
   nav: require('./modules/nav.js'),
   bindEvents : require('./scripts/bindEvents'),
   controls : require('./modules/controls.js'),
   init : function(){
     touchme();
     this.controls = this.controls();
-    this.nav();
-    this.bindEvents();
+    var self = this;
+    require('domready')(function(){
+      console.log("load", document.body);
+      self.nav = self.nav();
+      self.bindEvents();
+    });
   }
 };
 
@@ -437,7 +473,84 @@ window.lightbox = lightbox;
 
 
 
-},{"./modules/controls.js":15,"./modules/events.js":16,"./modules/imgCache.js":17,"./modules/nav.js":18,"./modules/polyfill-checks.js":19,"./modules/translate.js":20,"./modules/util.js":21,"./scripts/bindEvents":22}],15:[function(require,module,exports){
+},{"./modules/animations.js":16,"./modules/controls.js":17,"./modules/events.js":18,"./modules/imgCache.js":19,"./modules/nav.js":20,"./modules/polyfill-checks.js":21,"./modules/util.js":22,"./scripts/bindEvents":23,"domready":13}],16:[function(require,module,exports){
+/*
+functions that move the image around the lightbox
+
+all of these functions are chainable
+ */
+"use strict";
+
+var translate = function(image){
+  var
+      timedFunctions = [],
+      complete,
+      done = new Promise(function(res){
+        complete = res;
+      });
+
+  function wait(t, fn){
+    return new Promise(function(res){
+      setTimeout(function(){
+        res(fn);
+      }, t);
+    });
+  }
+  function waterfall(){
+      if(timedFunctions.length > 0){
+        var timedFn = timedFunctions.shift();
+        return wait(timedFn.t, timedFn.fn).then(function(fn){
+          fn();
+          waterfall();
+        });
+      }else{
+        complete(image);
+      }
+  }
+  function stack(t,fn){
+    var timedFn = {t:t, fn:fn};
+    timedFunctions.push(timedFn);
+  }
+  return{
+    slideRight: function(){
+      var idx;
+      console.log(image);
+      stack(0, function(){
+        image.classList.add('pictureSlideRight');
+        idx = image.dataset.idx;
+      });
+      stack(325, function(){
+        image.classList.remove('pictureSlideRight');
+        image.classList.add('hidden');
+        image.style.transform = 'translateX(0)';
+        //lightbox.navigate.prevImage(idx);
+      });
+      return this;
+    },
+    slideLeft: function(){
+      var idx;
+      stack(0, function(){
+        image.classList.add('pictureSlideLeft');
+        idx = image.dataset.idx;
+      });
+      stack(325, function(){
+        image.classList.remove('pictureSlideLeft');
+        image.classList.add('hidden');
+        image.style.transform = 'translateX(0)';
+        //lightbox.navigate.nextImage(idx);
+      });
+      return this;
+    },
+    start: function(){
+      waterfall();
+      return done;
+    }
+  };
+};
+
+module.exports = translate;
+
+},{}],17:[function(require,module,exports){
 var controls = function(){
   var
       modal = document.createElement('div')
@@ -458,25 +571,19 @@ var controls = function(){
   modal.appendChild(spinner);
   modal.appendChild(controls);
   modal.id = "lightbox-modal";
-  document.body.appendChild(modal);
-
-  var
-      _modal = document.getElementById('lightbox-modal')
-    , _left = document.getElementsByClassName('lightbox-controls-left')[0]
-    , _right = document.getElementsByClassName('lightbox-controls-right')[0]
-    , _remove  = document.getElementsByClassName('lightbox-controls-remove')[0];
-  return {
-    modal : _modal,
-    left : _left,
-    right: _right,
-    remove: _remove
+  document.body.insertBefore(modal, document.body.firstChild);
+  return{
+    left : document.getElementsByClassName('lightbox-controls-left')[0],
+    right: document.getElementsByClassName('lightbox-controls-right')[0],
+    remove: document.getElementsByClassName('lightbox-controls-remove')[0],
+    modal: document.getElementById('lightbox-modal')
   }
 };
 
 module.exports = controls;
 
 
-},{}],16:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 /**
  * lightbox events / event  handlers
  *
@@ -662,7 +769,7 @@ events.clear = function(){
 
 module.exports = events;
 
-},{}],17:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 "use strict";
 var imgCache = function(){
 
@@ -708,7 +815,7 @@ var imgCache = function(){
 
 module.exports = imgCache();
 
-},{}],18:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 
 
 "use strict";
@@ -738,7 +845,6 @@ var nav = function() {
     var img = this.getElementsByTagName('img')[0];
     var idx = img.dataset.idx,
       src = imageSet[idx];
-    console.log(idx, src, img, this);
     lightboxEnter();
     cache.loadImage(src).then(function(image){
       if(! cache.isComplete()){
@@ -796,7 +902,6 @@ var nav = function() {
     , disableDefault = lightbox.events.get('disableDefault')
     , scrollWheelListener = lightbox.events.get('scrollWheelListener');
 
-
   function disableDrag(el){
     el.addEventListener('dragstart', disableDefault);
     el.addEventListener('dragend', disableDefault);
@@ -847,13 +952,13 @@ var nav = function() {
   function removeImage(image){
     lightboxModal.removeChild(image);
   }
-  function nextImage(){
+  function nextImage(e){
+    e.stopPropagation();
     var
-        idx = lightboxModal.dataset.idx
-      , curImg = imageSet[idx]
+        idx = parseInt(lightboxModal.dataset.idx)
+      , curImg = lightboxModal.getElementsByTagName('img')[0]
       , nextImg = imageSet[idx+1]
       , newIdx = idx+1;
-
     if(typeof nextImg === 'undefined'){
       nextImg = imageSet[1];
       newIdx=1;
@@ -861,19 +966,19 @@ var nav = function() {
 
     cache.loadImage(nextImg).then(function(image){
       var next = image;
-      lightbox.translate(curImg).slideLeft().start().then(function(){
+      lightbox.animate(curImg).slideLeft().start().then(function(){
         removeImage(curImg);
         addImage(newIdx, next);
       });
     });
   }
-  function prevImage(){
+  function prevImage(e){
+    e.stopPropagation();
     var
-        idx = lightboxModal.dataset.idx
-      , curImg = imageSet[idx]
+        idx = parseInt(lightboxModal.dataset.idx)
+      , curImg = lightboxModal.getElementsByTagName('img')[0]
       , prevImg = imageSet[idx-1]
       , newIdx = idx-1;
-
     if(typeof prevImg === 'undefined'){
       prevImg = imageSet[imageSet.last];
       newIdx = imageSet.last;
@@ -881,7 +986,7 @@ var nav = function() {
 
     cache.loadImage(prevImg).then(function(image){
       var prev = image;
-      lightbox.translate(curImg).slideRight().start().then(function(){
+      lightbox.animate(curImg).slideRight().start().then(function(){
         removeImage(curImg);
         addImage(newIdx, prev);
       });
@@ -897,7 +1002,7 @@ var nav = function() {
 
 module.exports = nav;
 
-},{}],19:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 /*globals Modernizr*/
 /*
 The lightbox relies on serveral features that might not be widely supported.
@@ -921,82 +1026,7 @@ module.exports = (function(){
 
 })();
 
-},{"browsernizr":1,"browsernizr/test/dom/classlist.js":11,"browsernizr/test/es6/promises.js":12,"classlist-polyfill":"classList","es6-promise":"promise"}],20:[function(require,module,exports){
-/*
-functions that move the image around the lightbox
-
-all of these functions are chainable
- */
-"use strict";
-
-var translate = function(image){
-  var
-      timedFunctions = [],
-      complete,
-      done = new Promise(function(res){
-        complete = res;
-      });
-
-  function wait(t, fn){
-    return new Promise(function(res){
-      setTimeout(function(){
-        res(fn);
-      }, t);
-    });
-  }
-  function waterfall(){
-      if(timedFunctions.length > 0){
-        var timedFn = timedFunctions.shift();
-        return wait(timedFn.t, timedFn.fn).then(function(fn){
-          fn();
-          waterfall();
-        });
-      }else{
-        complete(image);
-      }
-  }
-  function stack(t,fn){
-    var timedFn = {t:t, fn:fn};
-    timedFunctions.push(timedFn);
-  }
-  return{
-    slideRight: function(){
-      var idx;
-      stack(0, function(){
-        image.classList.add('pictureSlideRight');
-        idx = image.dataset.idx;
-      });
-      stack(325, function(){
-        image.classList.remove('pictureSlideRight');
-        image.classList.add('hidden');
-        image.style.transform = 'translateX(0)';
-        //lightbox.navigate.prevImage(idx);
-      });
-      return this;
-    },
-    slideLeft: function(){
-      var idx;
-      stack(0, function(){
-        image.classList.add('pictureSlideLeft');
-        idx = image.dataset.idx;
-      });
-      stack(325, function(){
-        image.classList.remove('pictureSlideLeft');
-        image.classList.add('hidden');
-        image.style.transform = 'translateX(0)';
-        //lightbox.navigate.nextImage(idx);
-      });
-    },
-    start: function(){
-      waterfall();
-      return done;
-    }
-  };
-};
-
-module.exports = translate;
-
-},{}],21:[function(require,module,exports){
+},{"browsernizr":1,"browsernizr/test/dom/classlist.js":11,"browsernizr/test/es6/promises.js":12,"classlist-polyfill":"classList","es6-promise":"promise"}],22:[function(require,module,exports){
 /**
  * utilities functions, top level selector, etc
  */
@@ -1063,7 +1093,7 @@ var util = function(sel){
 
 module.exports = util;
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 /* globals */
 
 "use strict";
@@ -2296,4 +2326,4 @@ if ("document" in window.self) {
 
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":13}]},{},[14]);
+},{"_process":14}]},{},[15]);

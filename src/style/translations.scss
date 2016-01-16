@@ -1,0 +1,57 @@
+.fadeIn{
+  opacity: 1;
+  visibility: visible !important;
+}
+/*
+==============================================
+pictureSlideLeft
+==============================================
+*/
+.pictureSlideLeft{
+  animation-name: pictureSlideLeft;
+  -webkit-animation-name: pictureSlideLeft;
+
+  animation-duration: 325ms;
+  -webkit-animation-duration: 325ms;
+
+  animation-timing-function: ease-in-out;
+  -webkit-animation-timing-function: ease-in-out;
+}
+
+@keyframes pictureSlideLeft {
+  100% {
+    transform: translateX(-250%);
+  }
+}
+@-webkit-keyframes pictureSlideLeft {
+
+  100% {
+    -webkit-transform: translateX(-250%);
+  }
+}
+/*
+==============================================
+pictureSlideRight
+==============================================
+*/
+.pictureSlideRight{
+  animation-name: pictureSlideRight;
+  -webkit-animation-name: pictureSlideRight;
+
+  animation-duration: 325ms;
+  -webkit-animation-duration: 325ms;
+
+  animation-timing-function: ease-in-out;
+  -webkit-animation-timing-function: ease-in-out;
+}
+
+@keyframes pictureSlideRight {
+  100% {
+    transform: translateX(250%);
+  }
+}
+@-webkit-keyframes pictureSlideRight {
+  100% {
+    -webkit-transform: translateX(250%);
+  }
+}

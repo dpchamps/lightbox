@@ -18,18 +18,12 @@ var controls = function(){
   modal.appendChild(spinner);
   modal.appendChild(controls);
   modal.id = "lightbox-modal";
-  document.body.appendChild(modal);
-
-  var
-      _modal = document.getElementById('lightbox-modal')
-    , _left = document.getElementsByClassName('lightbox-controls-left')[0]
-    , _right = document.getElementsByClassName('lightbox-controls-right')[0]
-    , _remove  = document.getElementsByClassName('lightbox-controls-remove')[0];
-  return {
-    modal : _modal,
-    left : _left,
-    right: _right,
-    remove: _remove
+  document.body.insertBefore(modal, document.body.firstChild);
+  return{
+    left : document.getElementsByClassName('lightbox-controls-left')[0],
+    right: document.getElementsByClassName('lightbox-controls-right')[0],
+    remove: document.getElementsByClassName('lightbox-controls-remove')[0],
+    modal: document.getElementById('lightbox-modal')
   }
 };
 

@@ -4,15 +4,19 @@ var lightbox = {
   util : require('./modules/util.js'),
   events : require('./modules/events.js'),
   imgCache: require('./modules/imgCache.js'),
-  translate: require('./modules/translate.js'),
+  animate: require('./modules/animations.js'),
   nav: require('./modules/nav.js'),
   bindEvents : require('./scripts/bindEvents'),
   controls : require('./modules/controls.js'),
   init : function(){
     touchme();
     this.controls = this.controls();
-    this.nav();
-    this.bindEvents();
+    var self = this;
+    require('domready')(function(){
+      console.log("load", document.body);
+      self.nav = self.nav();
+      self.bindEvents();
+    });
   }
 };
 
