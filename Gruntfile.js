@@ -3,7 +3,16 @@ module.exports = function(grunt) {
   grunt.initConfig({
 
     pkg: grunt.file.readJSON('package.json'),
-
+    sass: {
+      options: {
+        sourceMap: true
+      },
+      dist: {
+        files: {
+          'dist/<%= pkg.name.replace(".js", "") %>.css': 'src/style/main.scss'
+        }
+      }
+    },
     concat: {
       options: {
         separator: "\n\n"
@@ -49,7 +58,7 @@ module.exports = function(grunt) {
     },
 
     watch: {
-      files: ['src/*.js', 'src/modules/*.js'],
+      files: ['src/*.js', 'src/modules/*.js', 'src/style/*.scss'],
       tasks: ['browserify', 'jshint', 'qunit']
     },
 
@@ -70,11 +79,9 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-browserify');
+  grunt.loadNpmTasks('grunt-sass');
 
   grunt.registerTask('test', ['jshint', 'qunit']);
   grunt.registerTask('serve', ['build', 'watch']);
-  //grunt.registerTask('build', ['concat', 'jshint', 'qunit', 'uglify']);
-  grunt.registerTask('build', ['browserify','jshint', 'qunit', 'uglify']);
-
-
+  grunt.registerTask('build', ['browserify','jshint', 'qunit', 'uglify', 'sass']);
 };

@@ -426,6 +426,7 @@ var lightbox = {
   bindEvents : require('./scripts/bindEvents'),
   controls : require('./modules/controls.js'),
   init : function(){
+    touchme();
     this.controls = this.controls();
     this.nav();
     this.bindEvents();
