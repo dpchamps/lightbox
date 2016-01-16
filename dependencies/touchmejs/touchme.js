@@ -243,7 +243,8 @@ var touchme = function(args) {
 
                   triggerEvent(holdElement.target, 'hold', {
                     x: currentX,
-                    y: currentY
+                    y: currentY,
+                    touches: e.touches
                   });
                   tapNumber = 0;
                 }
@@ -257,6 +258,9 @@ var touchme = function(args) {
                                                 initialPinch['touch1'].x,
                                                 initialPinch['touch0'].y,
                                                 initialPinch['touch1'].y);
+
+          initialPinch['midPoint'] = getMidPoint(getTouchPoints(e));
+
         }
     });
 
@@ -291,6 +295,7 @@ var touchme = function(args) {
             triggerEvent(e.target, 'pinch', pinch);
             initialPinch = pinch.touchPoints;
             initialPinch['distance'] = pinch.distance;
+            initialPinch['midPoint'] = pinch.midPoint;
           }
         }
     });
@@ -301,20 +306,25 @@ var touchme = function(args) {
         the first is generic, it sets touch start to false and checks to see if the user was holding something
         the second is swipe specific, to check if the default 'swipeOnlyTouch' is set
      */
-    setListener(document, touchDevice ? 'mouseup touchend' : 'mouseup', function(){
+    setListener(document, touchDevice ? 'mouseup touchend' : 'mouseup', function(e){
         touchStart = false;
         if(initialPinch){
           initialPinch = undefined;
+          triggerEvent(e.target, 'pinchrelease', {
+
+          });
         }
+
         //if the user was holding something...
-        if(isHolding){
+        if(isHolding && e.touches.length === 0){
             isHolding = false;
             clearInterval(holdInterval);
             triggerEvent(holdElement.target, 'holdrelease', {
                 originalX: originalX,
                 originalY: originalY,
                 lastX: lastX,
-                lastY: lastY
+                lastY: lastY,
+                touches: e.touches
             });
         }
     });

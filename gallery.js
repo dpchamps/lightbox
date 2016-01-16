@@ -102,7 +102,6 @@ var galleryModule = function(){
     };
     el.addEventListener('mousemove', eventHandlers.translateMousemove);
     el.addEventListener('touchmove', eventHandlers.translateTouchmove);
-
   }
   function addTouchListeners(el){
     console.log("adding touch listeners");

@@ -5,11 +5,14 @@ var lightbox = {
   events : require('./modules/events.js'),
   imgCache: require('./modules/imgCache.js'),
   animate: require('./modules/animations.js'),
+  transform: require('./modules/transform.js'),
   nav: require('./modules/nav.js'),
   bindEvents : require('./scripts/bindEvents'),
   controls : require('./modules/controls.js'),
   init : function(){
-    touchme();
+    touchme({ holdThreshold: 5,
+      tapThreshold: 100,
+      precision: 20});
     this.controls = this.controls();
     var self = this;
     require('domready')(function(){

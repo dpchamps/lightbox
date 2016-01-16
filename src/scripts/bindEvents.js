@@ -13,7 +13,6 @@ var bindEvents = function () {
   lightbox.controls.left.addEventListener('tap', lightbox.nav.prev);
   lightbox.controls.right.addEventListener('tap', lightbox.nav.next);
   lightbox.controls.remove.addEventListener('tap', lightbox.nav.exit);
-  lightbox.controls.modal.addEventListener('tap', lightbox.nav.exit);
 };
 
 module.exports = bindEvents;
