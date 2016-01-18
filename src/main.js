@@ -12,6 +12,8 @@ var lightbox = {
   init : function(){
 
     touchme({ holdThreshold: 50,
+      swipeThreshold: 200,
+      swipePrecision: 250,
       tapPrecision: 250,
       tapThreshold: 250,
       holdPrecision: 500});

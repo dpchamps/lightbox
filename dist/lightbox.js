@@ -461,6 +461,8 @@ var lightbox = {
   init : function(){
 
     touchme({ holdThreshold: 50,
+      swipeThreshold: 200,
+      swipePrecision: 250,
       tapPrecision: 250,
       tapThreshold: 250,
       holdPrecision: 500});
@@ -893,7 +895,7 @@ var nav = function() {
       zoomScale = (dbltapZoom) ? maxZoom : 0.02,
       cX = e.x,
       cY = e.y;
-    console.log("dbltap", cX, cY);
+
     var interval = setInterval(function(){
       zoomScale+=0.1;
       var matrix = lightbox.transform.getImageTransformMatrix(img, zoomScale, cX, cY);
@@ -910,17 +912,18 @@ var nav = function() {
       el = e.target,
       box = el.getBoundingClientRect(),
       navTarget = window.innerWidth*0.7,
-      tapEvent = new Event('tap');
-    if(box.right <= navTarget){
+      tapEvent = new Event('tap'),
+      distance = Math.abs(e.originalX- e.lastX);
+
+    if(box.right <= navTarget && distance > 150){
       lightbox.controls.right.dispatchEvent(tapEvent);
     }
-    if(box.left >= navTarget/2){
+    if(box.left >= navTarget/2 && distance > 150){
       lightbox.controls.left.dispatchEvent(tapEvent);
     }
     if(box.width < window.innerWidth
       && box.height < window.innerHeight
-      && box.right > navTarget
-      && box.left < navTarget/2){
+      && distance < 150){
       var matrix = lightbox.transform.getElMatrix(el),
           moveBy = matrix[4]/5,
           moveInterval = setInterval(function(){
@@ -954,6 +957,66 @@ var nav = function() {
     var matrix = lightbox.transform.getImageTransformMatrix(img, zoomScale, e.clientX, e.clientY);
     lightbox.transform.transformImage(img, matrix);
   });
+  lightbox.events.add(function swipeListener(e){
+    var quadrant = Math.floor((e.direction.degrees/90)%4 +1),
+      image = e.target,
+      matrix = lightbox.transform.getElMatrix(image),
+      scale = matrix[0],
+      slideScaleX = e.distance.x,
+      slideScaleY = e.distance.y,
+      isMultipleTouch = (e.touches && e.touches.length > 1),
+      threshold = 75;
+    if(isMultipleTouch){
+      return false;
+    }
+    if(scale > 1.5){
+      if(e.distance.x > threshold && e.distance.y <= threshold){
+        switch(quadrant) {
+          case 1:
+          case 4:
+            lightbox.transform.smoothTranslate(image, 5, matrix[4]+slideScaleX, matrix[5], 2);
+                break;
+          case 2:
+          case 3:
+            lightbox.transform.smoothTranslate(image, 5, matrix[4]-slideScaleX, matrix[5], 2);
+            break;
+        }
+      }
+      if(e.distance.y > threshold && e.distance.x <= threshold){
+        switch (quadrant) {
+          case 1:
+          case 2:
+            lightbox.transform.smoothTranslate(image, 5, matrix[4], matrix[5]-slideScaleY, 4);
+            break;
+          case 3:
+          case 4:
+            lightbox.transform.smoothTranslate(image, 5, matrix[4], matrix[5]+slideScaleY, 4);
+            break;
+        }
+      }
+      if(e.distance.y > threshold && e.distance.x > threshold){
+        switch(quadrant){
+          case 1:
+            //up & right
+            lightbox.transform.smoothTranslate(image, 5, matrix[4]+slideScaleX, matrix[5]-slideScaleY, 4);
+            break;
+          case 2:
+            //up & left
+            lightbox.transform.smoothTranslate(image, 5, matrix[4]-slideScaleX, matrix[5]-slideScaleY, 4);
+            break;
+          case 3:
+            //down & left
+            lightbox.transform.smoothTranslate(image, 5, matrix[4]-slideScaleX, matrix[5]+slideScaleY, 4);
+            break;
+          case 4:
+            //down & right
+            lightbox.transform.smoothTranslate(image, 5, matrix[4]+slideScaleX, matrix[5]+slideScaleY, 4);
+            break
+        }
+      }
+    }
+
+  });
   var holdListener = lightbox.events.get('holdListener')
     , stopTapProp = lightbox.events.get('stopTapProp')
     , dbltapListener = lightbox.events.get('dbltapListener')
@@ -961,7 +1024,8 @@ var nav = function() {
     , holdreleaseListener = lightbox.events.get('holdreleaseListener')
     , disableDefault = lightbox.events.get('disableDefault')
     , scrollWheelListener = lightbox.events.get('scrollWheelListener')
-    , pinchReleaseListener = lightbox.events.get('pinchReleaseListener');
+    , pinchReleaseListener = lightbox.events.get('pinchReleaseListener')
+    , swipeListener = lightbox.events.get('swipeListener');
 
   function translateImageStart(img, x, y){
     var  initialMatrix =  lightbox.transform.getElMatrix(img);
@@ -1016,6 +1080,7 @@ var nav = function() {
     el.addEventListener('holdrelease', holdreleaseListener);
     el.addEventListener('mousewheel', scrollWheelListener);
     el.addEventListener('pinchrelease', pinchReleaseListener);
+    el.addEventListener('swipe', swipeListener);
   }
   function removeTouchListeners(el){
     enableTouch(document);
@@ -1125,6 +1190,10 @@ transform.getElMatrix = function(el){
     el.style.transform = "scale(1,1)";
   }
   return this.matrixArray(window.getComputedStyle(el).transform);
+};
+transform.getXScale = function(img){
+  return this.getElMatrix(img)[0];
+
 };
 transform.transformImage = function(img, matrix){
   img.style.transform = "matrix("+matrix.join()+")";
@@ -1276,12 +1345,50 @@ transform.translateImage = function(el, oX, oY, nX, nY, initialMatrix){
     distanceScale = 0.75,
     xDistance = (nX - oX)*distanceScale,
     yDistance = (nY - oY)*distanceScale,
-    matrix = this.getElMatrix(el),
-    threshold = 150;
+    matrix = this.getElMatrix(el);
 
   matrix[4] =  initialMatrix[4] + xDistance;
   matrix[5] = this.yAxisBounds(image, initialMatrix[5], yDistance, matrix[5]);
   this.transformImage(image, matrix);
+};
+transform.smoothTranslate = function(el, ms, x, y, precision){
+  var matrix = this.getElMatrix(el),
+      dX = x - matrix[4],
+      dY = y - matrix[5],
+      angle = Math.atan2(dY, dX),
+      velocity = 15,
+      xApproach = false,
+      yApproach = false,
+      self = this,
+      moveInterval = setInterval(function(){
+        if(  matrix[4] >= (x-precision)
+          && matrix[4] <= (x+precision)){
+          xApproach = true;
+        }else if(
+          el.getBoundingClientRect().right <= window.innerWidth
+        ||el.getBoundingClientRect().left >= 0 ){
+          xApproach = true;
+        }else{
+          matrix[4] += Math.cos(angle) * velocity;
+        }
+        if(  matrix[5] >= (y-precision)
+          && matrix[5] <= (y+precision)){
+          yApproach = true;
+        }else if(
+           el.getBoundingClientRect().bottom <= window.innerHeight
+        || el.getBoundingClientRect().top >= 0
+        ){
+          yApproach = true;
+        }else{
+          matrix[5] += Math.sin(angle) * velocity;
+        }
+        self.transformImage(el, matrix);
+        //console.log("working", matrix[4], x);
+        if(xApproach && yApproach){
+          clearInterval(moveInterval);
+          console.log("smooting complete");
+        }
+      }, ms);
 };
 module.exports = transform;
 

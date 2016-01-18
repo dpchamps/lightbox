@@ -42,11 +42,14 @@ var touchme = function(args) {
         holdElement, isHolding,
         originalX, originalY, //for elements that are being held
         holdInterval, lastX, lastY, //cursor tracking while holding
-        initialPinch;
+        initialPinch,
+        swipeTimeout = false,
+        swipeTimer;
 
     //where args is an object that can replace any of the default arguments
     var defaults = {
-        swipeThreshold: 80,
+        swipePrecision: 80,
+        swipeThreshold: 100,
         tapThreshold: 150,
         pinchResolution: 15,
         holdThreshold: 550,
@@ -56,6 +59,7 @@ var touchme = function(args) {
         onlyTap : false,
         swipeOnlyTouch: false,
         nTap: false
+
     };
     //replace any object that belongs in the defaults
     if(args){
@@ -254,7 +258,10 @@ var touchme = function(args) {
           initialPinch['midPoint'] = getMidPoint(getTouchPoints(e));
 
         }
-
+        //setSwipe timeout
+      swipeTimer = setTimeout(function(){
+        swipeTimeout = true;
+      }, defaults.swipeThreshold);
     });
 
     //track the movement / drag
@@ -334,42 +341,50 @@ var touchme = function(args) {
             deltaY = oldY - currentY;
 
         //calculate radians for direction
-        var rads = Math.atan2(currentY-oldY, currentX-oldX);
-        if(rads<0){rads+= Math.PI*2;}
+        var rads = Math.atan2((currentY-oldY), -(currentX-oldX))+Math.PI,
+            multiTouch = (e.touches && e.touches.length > 1);
 
         //the user is swiping...
-        //why do we need this?
-        if(deltaX <= defaults.swipeThreshold || deltaY <= defaults.swipeThreshold){
+        if((deltaX <= defaults.swipePrecision || deltaY <= defaults.swipePrecision) && multiTouch === false){
             swipeEvents.push('swipe');
         }
 
         //directional swipes
-        if( deltaX <= -defaults.swipeThreshold ){
+        if( deltaX <= -defaults.swipePrecision ){
             swipeEvents.push('swiperight');
         }
-        if( deltaX >= defaults.swipeThreshold ){
+        if( deltaX >= defaults.swipePrecision ){
             swipeEvents.push('swipeleft');
         }
-        if( deltaY >= defaults.swipeThreshold ){
+        if( deltaY >= defaults.swipePrecision ){
             swipeEvents.push('swipeup');
         }
-        if( deltaY <= -defaults.swipeThreshold ){
+        if( deltaY <= -defaults.swipePrecision ){
             swipeEvents.push('swipedown');
         }
 
         var i = swipeEvents.length;
+      if(swipeTimeout === false){
         while(i--){
-            triggerEvent(e.target, swipeEvents[i], {
-                distance:{
-                    x: Math.abs(deltaX),
-                    y: Math.abs(deltaY)
-                },
-                direction:{
-                    radians: rads,
-                    degrees: rads*(180/Math.PI)
-                }
-            });
+          triggerEvent(e.target, swipeEvents[i], {
+            distance:{
+              x: Math.abs(deltaX),
+              y: Math.abs(deltaY)
+            },
+            direction:{
+              radians: rads,
+              degrees: rads*(180/Math.PI)
+            }
+          });
         }
+        clearTimeout(swipeTimer);
+      }else{
+        swipeTimeout = false;
+        clearTimeout(swipeTimer);
+        swipeEvents = [];
+      }
+
+
     });
 
     return touchDevice;

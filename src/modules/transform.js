@@ -16,6 +16,10 @@ transform.getElMatrix = function(el){
   }
   return this.matrixArray(window.getComputedStyle(el).transform);
 };
+transform.getXScale = function(img){
+  return this.getElMatrix(img)[0];
+
+};
 transform.transformImage = function(img, matrix){
   img.style.transform = "matrix("+matrix.join()+")";
 };
@@ -166,11 +170,49 @@ transform.translateImage = function(el, oX, oY, nX, nY, initialMatrix){
     distanceScale = 0.75,
     xDistance = (nX - oX)*distanceScale,
     yDistance = (nY - oY)*distanceScale,
-    matrix = this.getElMatrix(el),
-    threshold = 150;
+    matrix = this.getElMatrix(el);
 
   matrix[4] =  initialMatrix[4] + xDistance;
   matrix[5] = this.yAxisBounds(image, initialMatrix[5], yDistance, matrix[5]);
   this.transformImage(image, matrix);
+};
+transform.smoothTranslate = function(el, ms, x, y, precision){
+  var matrix = this.getElMatrix(el),
+      dX = x - matrix[4],
+      dY = y - matrix[5],
+      angle = Math.atan2(dY, dX),
+      velocity = 15,
+      xApproach = false,
+      yApproach = false,
+      self = this,
+      moveInterval = setInterval(function(){
+        if(  matrix[4] >= (x-precision)
+          && matrix[4] <= (x+precision)){
+          xApproach = true;
+        }else if(
+          el.getBoundingClientRect().right <= window.innerWidth
+        ||el.getBoundingClientRect().left >= 0 ){
+          xApproach = true;
+        }else{
+          matrix[4] += Math.cos(angle) * velocity;
+        }
+        if(  matrix[5] >= (y-precision)
+          && matrix[5] <= (y+precision)){
+          yApproach = true;
+        }else if(
+           el.getBoundingClientRect().bottom <= window.innerHeight
+        || el.getBoundingClientRect().top >= 0
+        ){
+          yApproach = true;
+        }else{
+          matrix[5] += Math.sin(angle) * velocity;
+        }
+        self.transformImage(el, matrix);
+        //console.log("working", matrix[4], x);
+        if(xApproach && yApproach){
+          clearInterval(moveInterval);
+          console.log("smooting complete");
+        }
+      }, ms);
 };
 module.exports = transform;
