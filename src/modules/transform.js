@@ -19,21 +19,34 @@ transform.getElMatrix = function(el){
 transform.transformImage = function(img, matrix){
   img.style.transform = "matrix("+matrix.join()+")";
 };
-transform.getFocusPoint = function(clientX, clientY, img){
+transform.getComputedRect = function(el){
+  var
+      width = parseInt(window.getComputedStyle(el).width.split('px')[0], 10)
+    , height = parseInt(window.getComputedStyle(el).height.split('px')[0], 10);
+
+  return {
+    width:width,
+    height:height
+  }
+};
+transform.getFocusPoint = function(clientX, clientY, img, zoomScale){
+  if(typeof zoomScale === 'undefined'){
+    zoomScale = 0
+  }
   var
     rect = img.getBoundingClientRect(),
+    calcScale = (zoomScale >= 0) ? zoomScale+1 : zoomScale -1,
     viewportCX = window.innerWidth / 2,
     viewPortCY = window.innerHeight / 2,
-    imgCX = rect.width/ 2,
-    imgCY = rect.height/ 2,
+    imgCX = (rect.width*calcScale)/2,
+    imgCY = (rect.height*calcScale)/2,
     left = viewportCX - imgCX,
     top = viewPortCY - imgCY;
-
   return {
     'x' : (clientX+left),
     'y' : (clientY+top),
-    'cX': (rect.width/2)+rect.left,
-    'cY': (rect.height/2) +rect.top
+    'cX': imgCX+rect.left,
+    'cY': imgCY+rect.top
   };
 };
 transform.getCalcFocusPoint = function(zoomScale, clientX, clientY, img){
@@ -41,9 +54,9 @@ transform.getCalcFocusPoint = function(zoomScale, clientX, clientY, img){
     width = parseInt(window.getComputedStyle(img).width.split('px')[0], 10),
     height = parseInt(window.getComputedStyle(img).height.split('px')[0], 10),
     calcScale = (zoomScale >= 0) ? zoomScale+1 : zoomScale -1,
-    calcWidth =width * calcScale,
     viewportCX = window.innerWidth / 2,
     viewportCY = window.innerHeight / 2,
+    calcWidth =width * calcScale,
     calcHeight = height * calcScale,
     calcLeft = Math.round( viewportCX - (calcWidth/2)),
     calcTop = Math.round(viewportCY - (calcHeight/2));
@@ -82,7 +95,8 @@ transform.getImageTransformMatrix = function(img, zoomScale, clientX, clientY){
   }
   var
     focusPoint = this.getFocusPoint(clientX, clientY, img),
-    calcFocusPoint = this.getCalcFocusPoint(zoomScale,clientX,clientY, img),
+    calcFocusPoint = this.getCalcFocusPoint(zoomScale, clientX,clientY, img),
+    //calcFocusPointTEST = this.getFocusPoint(clientX,clientY, img, zoomScale),
     x_from_center = focusPoint.x - focusPoint.cX,
     y_from_center = focusPoint.y - focusPoint.cY,
     angle = Math.atan2((y_from_center), x_from_center),
@@ -116,8 +130,8 @@ transform.getImageTransformMatrix = function(img, zoomScale, clientX, clientY){
       }
     }else{
       if(matrix[0] <= 1){
-        //matrix[4] = 0;
-        //matrix[5] = 0;
+        matrix[4] = 0;
+        matrix[5] = 0;
       }else{
         matrix[4] = parseFloat(matrix[4])-(parseFloat(matrix[4])/6);
         matrix[5] = parseFloat(matrix[5])-(parseFloat(matrix[5])/6);
@@ -129,27 +143,34 @@ transform.getImageTransformMatrix = function(img, zoomScale, clientX, clientY){
   }
   return matrix;
 };
+transform.yAxisBounds = function(image, y, distance, curY){
+  var box = image.getBoundingClientRect(),
+      wHeight = window.innerHeight;
+
+  if(box.height <= wHeight){
+    return y;
+  }
+  if( curY+(wHeight-box.bottom) > (y+distance) ){
+    return curY;
+  }
+  if(curY-box.top < (y+distance) ){
+    return curY;
+  }
+
+  return y+distance;
+};
 transform.translateImage = function(el, oX, oY, nX, nY, initialMatrix){
   var
     image = el,
+    box = image.getBoundingClientRect(),
     distanceScale = 0.75,
     xDistance = (nX - oX)*distanceScale,
     yDistance = (nY - oY)*distanceScale,
     matrix = this.getElMatrix(el),
     threshold = 150;
-  //todo check bounds
-  matrix[4] =  initialMatrix[4] + xDistance;
-  matrix[5] =  initialMatrix[5] + yDistance;
 
+  matrix[4] =  initialMatrix[4] + xDistance;
+  matrix[5] = this.yAxisBounds(image, initialMatrix[5], yDistance, matrix[5]);
   this.transformImage(image, matrix);
-  if(Math.abs(xDistance) > threshold){
-    /*
-     if(clientX > startX){
-     leftAnimation(event);
-     }else{
-     rightAnimation(event)
-     }
-     */
-  }
 };
 module.exports = transform;

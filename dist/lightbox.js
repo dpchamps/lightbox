@@ -459,13 +459,18 @@ var lightbox = {
   bindEvents : require('./scripts/bindEvents'),
   controls : require('./modules/controls.js'),
   init : function(){
-    touchme({ holdThreshold: 5,
-      tapThreshold: 100,
-      precision: 20});
+
+    touchme({ holdThreshold: 50,
+      tapPrecision: 250,
+      tapThreshold: 250,
+      holdPrecision: 500});
     this.controls = this.controls();
     var self = this;
     require('domready')(function(){
       console.log("load", document.body);
+      document.addEventListener('touchend', function(e){
+        e.preventDefault();
+      });
       self.nav = self.nav();
       self.bindEvents();
     });
@@ -832,7 +837,8 @@ var nav = function() {
     , thumbs = document.querySelectorAll('.thumb img')
     , imageSet = {last : 0}
     , cache = lightbox.imgCache
-    , lightboxModal = document.getElementById('lightbox-modal');
+    , lightboxModal = document.getElementById('lightbox-modal')
+    ,  dbltapZoom = false;
 
   for(var i = 0; i<thumbs.length; i++){
     var image = thumbs[i];
@@ -840,8 +846,8 @@ var nav = function() {
         bigImage = image.dataset.img;
     imageSet[idx] = bigImage;
     imageSet.last = (imageSet.last < idx) ? idx : imageSet.last;
-
   }
+
   //add events
   lightbox.events.add(function thumbTap(e){
     e.stopPropagation();
@@ -856,6 +862,10 @@ var nav = function() {
       addImage(idx, image);
     });
   });
+  lightbox.events.add(function stopTapProp(e){
+    console.log('tap');
+    e.stopPropagation();
+  });
   lightbox.events.add(function disableDefault(e){
     e.preventDefault();
   });
@@ -865,7 +875,7 @@ var nav = function() {
   lightbox.events.add(function pinchListener(e){
     var
       img = e.target,
-      zoomScale = (e.distance - e.initialPinch.distance)/1000,
+      zoomScale = (e.distance - e.initialPinch.distance)/500,
       cX = e.midPoint.x,
       cY = e.midPoint.y,
       oX = e.initialPinch.midPoint.x,
@@ -874,36 +884,61 @@ var nav = function() {
       initialMatrix = lightbox.transform.getImageTransformMatrix(img, zoomScale, oX, oY);
       lightbox.transform.transformImage(img, matrix);
       lightbox.transform.translateImage(img, oX, oY, cX, cY, initialMatrix);
+  });
+  lightbox.events.add(function dbltapListener(e){
 
+    var
+      img = e.target,
+      maxZoom = 2,
+      zoomScale = (dbltapZoom) ? maxZoom : 0.02,
+      cX = e.x,
+      cY = e.y;
+    console.log("dbltap", cX, cY);
+    var interval = setInterval(function(){
+      zoomScale+=0.1;
+      var matrix = lightbox.transform.getImageTransformMatrix(img, zoomScale, cX, cY);
+      lightbox.transform.transformImage(img, matrix);
+      if(zoomScale >= maxZoom){
+        clearInterval(interval);
+      }
+    }, 25);
   });
   lightbox.events.add(function pinchReleaseListener(e){
-    console.log('pinch release');
   });
   lightbox.events.add(function holdreleaseListener(e){
-    console.log('hold release');
     var
-      distanceScale = 0.70,
-      distance = (e.lastX - e.originalX)*distanceScale,
-      el = e.target;
+      el = e.target,
+      box = el.getBoundingClientRect(),
+      navTarget = window.innerWidth*0.7,
+      tapEvent = new Event('tap');
+    if(box.right <= navTarget){
+      lightbox.controls.right.dispatchEvent(tapEvent);
+    }
+    if(box.left >= navTarget/2){
+      lightbox.controls.left.dispatchEvent(tapEvent);
+    }
+    if(box.width < window.innerWidth
+      && box.height < window.innerHeight
+      && box.right > navTarget
+      && box.left < navTarget/2){
+      var matrix = lightbox.transform.getElMatrix(el),
+          moveBy = matrix[4]/5,
+          moveInterval = setInterval(function(){
+            matrix[4] = matrix[4]-moveBy;
+            if(moveBy < 0 && matrix[4] > 0){
+              matrix[4] = 0;
+            }
+            if(moveBy > 0 && matrix[4] < 0){
+              matrix[4] = 0;
+            }
+            lightbox.transform.transformImage(el, matrix);
+            if(Math.abs(matrix[4]) <= 0){
+              clearInterval(moveInterval);
+            }
+          }, 15);
 
-    if(Math.abs(distance) > 25) {
-      /*
-       if(e.lastX > e.originalX){
-       leftAnimation(event);
-       }else{
-       rightAnimation(event)
-       }
-
-       }else{
-       /*
-       $(el).css({
-       'transform': 'translateX(0)',
-       '-webkit-transform': 'translateX(0)'
-       });
-       */
 
     }
-
     el.removeEventListener('mousemove', lightbox.events.get('translateMouseMove'));
     el.removeEventListener('touchmove', lightbox.events.get('translateTouchMove'));
     lightbox.events.remove('translateTouchMove');
@@ -917,10 +952,11 @@ var nav = function() {
       zoomScale = zoomScale*-1;
     }
     var matrix = lightbox.transform.getImageTransformMatrix(img, zoomScale, e.clientX, e.clientY);
-    console.log(matrix);
     lightbox.transform.transformImage(img, matrix);
   });
   var holdListener = lightbox.events.get('holdListener')
+    , stopTapProp = lightbox.events.get('stopTapProp')
+    , dbltapListener = lightbox.events.get('dbltapListener')
     , pinchListener = lightbox.events.get('pinchListener')
     , holdreleaseListener = lightbox.events.get('holdreleaseListener')
     , disableDefault = lightbox.events.get('disableDefault')
@@ -929,21 +965,18 @@ var nav = function() {
 
   function translateImageStart(img, x, y){
     var  initialMatrix =  lightbox.transform.getElMatrix(img);
+
     lightbox.events.add(function translateMouseMove(e){
       lightbox.transform.translateImage(img, x,y, e.x, e.y, initialMatrix);
     });
     lightbox.events.add(function translateTouchMove(e){
       if(e.touches.length > 1){
-        return false;
+        img.removeEventListener('touchmove', lightbox.events.get('translateTouchMove'));
       }
-      lightbox.transform.translateImage(img, x, y, e.touches[0].pageX, e.touches[0].pageY, initialMatrix);
+      lightbox.transform.translateImage(img, x, y, e.touches[0].clientX, e.touches[0].clientY, initialMatrix);
     });
     img.addEventListener('mousemove', lightbox.events.get('translateMouseMove') );
     img.addEventListener('touchmove', lightbox.events.get('translateTouchMove') );
-  }
-
-  function pinchMove(img, x, y){
-
   }
 
   function disableDrag(el){
@@ -951,22 +984,21 @@ var nav = function() {
     el.addEventListener('dragend', disableDefault);
     el.addEventListener('drag', disableDefault);
   }
-  function disableTouch(){
-    document.addEventListener('touchstart', disableDefault);
-    document.addEventListener('touchmove',disableDefault);
-    document.addEventListener('touchend', disableDefault);
+  function disableTouch(el){
+    el.addEventListener('touchstart', disableDefault);
+    el.addEventListener('touchmove',disableDefault);
   }
-  function enableTouch(){
-    document.removeEventListener('touchstart', disableDefault);
-    document.removeEventListener('touchmove',disableDefault);
-    document.removeEventListener('touchend', disableDefault);
+  function enableTouch(el){
+    el.removeEventListener('touchstart', disableDefault);
+    el.removeEventListener('touchmove',disableDefault);
   }
   function lightboxEnter(){
     lightboxModal.style.visibility = 'visible';
     document.body.style.overflow = 'hidden';
-
   }
-  function lightboxExit(){
+  function lightboxExit(e){
+    console.log(e.target);
+    e.stopPropagation();
     var image = lightboxModal.getElementsByTagName('img')[0];
     removeTouchListeners(image);
     removeImage(image);
@@ -975,9 +1007,10 @@ var nav = function() {
   }
 
   function addTouchListeners(el){
-    console.log(el);
     disableDrag(el);
-    disableTouch();
+    disableTouch(document);
+    el.addEventListener('tap', stopTapProp);
+    el.addEventListener('dbltap', dbltapListener);
     el.addEventListener('hold', holdListener);
     el.addEventListener('pinch', pinchListener);
     el.addEventListener('holdrelease', holdreleaseListener);
@@ -985,7 +1018,7 @@ var nav = function() {
     el.addEventListener('pinchrelease', pinchReleaseListener);
   }
   function removeTouchListeners(el){
-    enableTouch();
+    enableTouch(document);
     el.removeEventListener('hold', holdListener);
     el.removeEventListener('pinch', pinchListener);
     el.removeEventListener('holdrelease', holdreleaseListener);
@@ -1096,21 +1129,34 @@ transform.getElMatrix = function(el){
 transform.transformImage = function(img, matrix){
   img.style.transform = "matrix("+matrix.join()+")";
 };
-transform.getFocusPoint = function(clientX, clientY, img){
+transform.getComputedRect = function(el){
+  var
+      width = parseInt(window.getComputedStyle(el).width.split('px')[0], 10)
+    , height = parseInt(window.getComputedStyle(el).height.split('px')[0], 10);
+
+  return {
+    width:width,
+    height:height
+  }
+};
+transform.getFocusPoint = function(clientX, clientY, img, zoomScale){
+  if(typeof zoomScale === 'undefined'){
+    zoomScale = 0
+  }
   var
     rect = img.getBoundingClientRect(),
+    calcScale = (zoomScale >= 0) ? zoomScale+1 : zoomScale -1,
     viewportCX = window.innerWidth / 2,
     viewPortCY = window.innerHeight / 2,
-    imgCX = rect.width/ 2,
-    imgCY = rect.height/ 2,
+    imgCX = (rect.width*calcScale)/2,
+    imgCY = (rect.height*calcScale)/2,
     left = viewportCX - imgCX,
     top = viewPortCY - imgCY;
-
   return {
     'x' : (clientX+left),
     'y' : (clientY+top),
-    'cX': (rect.width/2)+rect.left,
-    'cY': (rect.height/2) +rect.top
+    'cX': imgCX+rect.left,
+    'cY': imgCY+rect.top
   };
 };
 transform.getCalcFocusPoint = function(zoomScale, clientX, clientY, img){
@@ -1118,9 +1164,9 @@ transform.getCalcFocusPoint = function(zoomScale, clientX, clientY, img){
     width = parseInt(window.getComputedStyle(img).width.split('px')[0], 10),
     height = parseInt(window.getComputedStyle(img).height.split('px')[0], 10),
     calcScale = (zoomScale >= 0) ? zoomScale+1 : zoomScale -1,
-    calcWidth =width * calcScale,
     viewportCX = window.innerWidth / 2,
     viewportCY = window.innerHeight / 2,
+    calcWidth =width * calcScale,
     calcHeight = height * calcScale,
     calcLeft = Math.round( viewportCX - (calcWidth/2)),
     calcTop = Math.round(viewportCY - (calcHeight/2));
@@ -1159,7 +1205,8 @@ transform.getImageTransformMatrix = function(img, zoomScale, clientX, clientY){
   }
   var
     focusPoint = this.getFocusPoint(clientX, clientY, img),
-    calcFocusPoint = this.getCalcFocusPoint(zoomScale,clientX,clientY, img),
+    calcFocusPoint = this.getCalcFocusPoint(zoomScale, clientX,clientY, img),
+    //calcFocusPointTEST = this.getFocusPoint(clientX,clientY, img, zoomScale),
     x_from_center = focusPoint.x - focusPoint.cX,
     y_from_center = focusPoint.y - focusPoint.cY,
     angle = Math.atan2((y_from_center), x_from_center),
@@ -1193,8 +1240,8 @@ transform.getImageTransformMatrix = function(img, zoomScale, clientX, clientY){
       }
     }else{
       if(matrix[0] <= 1){
-        //matrix[4] = 0;
-        //matrix[5] = 0;
+        matrix[4] = 0;
+        matrix[5] = 0;
       }else{
         matrix[4] = parseFloat(matrix[4])-(parseFloat(matrix[4])/6);
         matrix[5] = parseFloat(matrix[5])-(parseFloat(matrix[5])/6);
@@ -1206,28 +1253,35 @@ transform.getImageTransformMatrix = function(img, zoomScale, clientX, clientY){
   }
   return matrix;
 };
+transform.yAxisBounds = function(image, y, distance, curY){
+  var box = image.getBoundingClientRect(),
+      wHeight = window.innerHeight;
+
+  if(box.height <= wHeight){
+    return y;
+  }
+  if( curY+(wHeight-box.bottom) > (y+distance) ){
+    return curY;
+  }
+  if(curY-box.top < (y+distance) ){
+    return curY;
+  }
+
+  return y+distance;
+};
 transform.translateImage = function(el, oX, oY, nX, nY, initialMatrix){
   var
     image = el,
+    box = image.getBoundingClientRect(),
     distanceScale = 0.75,
     xDistance = (nX - oX)*distanceScale,
     yDistance = (nY - oY)*distanceScale,
     matrix = this.getElMatrix(el),
     threshold = 150;
-  //todo check bounds
-  matrix[4] =  initialMatrix[4] + xDistance;
-  matrix[5] =  initialMatrix[5] + yDistance;
 
+  matrix[4] =  initialMatrix[4] + xDistance;
+  matrix[5] = this.yAxisBounds(image, initialMatrix[5], yDistance, matrix[5]);
   this.transformImage(image, matrix);
-  if(Math.abs(xDistance) > threshold){
-    /*
-     if(clientX > startX){
-     leftAnimation(event);
-     }else{
-     rightAnimation(event)
-     }
-     */
-  }
 };
 module.exports = transform;
 
@@ -1310,10 +1364,13 @@ var bindEvents = function () {
       lightbox = this
     , thumbTap = lightbox.events.get('thumbTap');
 
+
   lightbox.util('.thumb').addEvents('tap', thumbTap);
+
   lightbox.controls.left.addEventListener('tap', lightbox.nav.prev);
   lightbox.controls.right.addEventListener('tap', lightbox.nav.next);
   lightbox.controls.remove.addEventListener('tap', lightbox.nav.exit);
+  lightbox.controls.modal.addEventListener('tap', lightbox.nav.exit);
 };
 
 module.exports = bindEvents;

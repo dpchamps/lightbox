@@ -32,7 +32,6 @@ if(typeof CustomEvent === 'undefined' || typeof CustomEvent === 'object'){
 var touchme = function(args) {
     //`this` will be window in browser, and will contain ontouchstart if a mobile device
     var touchDevice = ('ontouchstart' in root);
-    console.log("test");
     //self explanatory...
     var
         touchStart = false,
@@ -51,7 +50,8 @@ var touchme = function(args) {
         tapThreshold: 150,
         pinchResolution: 15,
         holdThreshold: 550,
-        precision: 45,
+        precision: 20,
+        holdPrecision:200,
         onlyTouch: false,
         onlyTap : false,
         swipeOnlyTouch: false,
@@ -65,7 +65,7 @@ var touchme = function(args) {
             }
         }
     }
-    //reused for tap and hold.
+
     var isInTapLimits = function(){
         return(
             currentX >= oldX-defaults.precision &&
@@ -74,6 +74,15 @@ var touchme = function(args) {
             currentY <= oldY+defaults.precision
             );
     };
+    var isInHoldLimits = function(){
+        return(
+            currentX >= oldX-defaults.holdPrecision &&
+            currentX <= oldX+defaults.holdPrecision &&
+            currentY >= oldY-defaults.holdPrecision &&
+            currentY <= oldY+defaults.holdPrecision
+            );
+    };
+
     //add event (s) to a given element
     var setListener = function(element, evt, callback){
         var evtArr = evt.split(' ');
@@ -110,8 +119,8 @@ var touchme = function(args) {
       for(var i = 0; i < touches.length; i++){
           var keyName = "touch"+i;
           touchPoints[keyName] = {
-            x : touches[i].pageX,
-            y : touches[i].pageY,
+            x : touches[i].clientX,
+            y : touches[i].clientY,
             id : touches[i].identifier
           };
       }
@@ -182,75 +191,58 @@ var touchme = function(args) {
         touchDevice = true;
     }
 
-    //tap, dbltap, ntap, hold, initialPinch
+    //tap, dbltap, hold, initialPinch
     setListener(document, touchDevice ? 'mousedown touchstart' : 'mousedown', function(e){
         touchStart = true;
         tapNumber += 1;
-
         var pointer = getPointer(e);
-
-        oldX = currentX = pointer.pageX;
-        oldY = currentY = pointer.pageY;
+        oldX = currentX = pointer.clientX;
+        oldY = currentY = pointer.clientY;
 
         //initialize tapTimer
         clearTimeout(tapTimer);
-
-        if(defaults.onlyTap){
-            triggerEvent(e.target, 'tap', {
-                taps: tapNumber, //use case for ntap,
-                x : currentX,
-                y : currentY
-            });
-        }else{
-            tapTimer = setTimeout(function(){
-                if( isInTapLimits() && !touchStart ){
-                    //dense code
-                    //  first check if it's a double tap. Anything over 2 taps considered a double tap
-                    //  then, check if ntap is enabled, if so and more than 3 taps occcured, trigger ntap.
-                    var tapEventName = tapNumber>=2 ? 'dbltap' : 'tap';
-
-                    if(defaults.ntap) { tapEventName = tapNumber>=3 ? 'ntap' : tapEventName;}
-
-                    triggerEvent(e.target, tapEventName, {
-                        taps: tapNumber, //use case for ntap,
-                        x : currentX,
-                        y : currentY
-                    });
-
-                    tapNumber = 0;
-                }else if( !isInTapLimits() ){
-                    tapNumber = 0;
-                }
-            }, defaults.tapThreshold);
-
-            clearTimeout(holdTimer);
-            //if the user is already holding, do not initialize another hold. as it is, this causes bugs with multiple
-            // touch events. However, TODO: implement a 'multiple hold' event, to allow for multiple drag-and-drop
-            if(!isHolding){
-              holdTimer = setTimeout(function(){
-                if( isInTapLimits() && touchStart){
-                  //user is within the tap region and is still after hold threshold
-                  isHolding = true;
-                  //set the hold interval, every 50ms update the hold elements lastXY
-                  holdInterval = setInterval(function(){
-                    lastX = currentX;
-                    lastY = currentY;
-                  },50);
-                  //we'll reference this when the user let's go
-                  holdElement = e;
-                  originalX = holdElement.pageX;
-                  originalY = holdElement.pageY;
-
-                  triggerEvent(holdElement.target, 'hold', {
-                    x: currentX,
-                    y: currentY,
-                    touches: e.touches
-                  });
-                  tapNumber = 0;
-                }
-              }, defaults.holdThreshold);
+        tapTimer = setTimeout(function(){
+            if( isInTapLimits() && !touchStart ){
+              //dense code
+                //  first check if it's a double tap. Anything over 2 taps considered a double tap
+                //  then, check if ntap is enabled, if so and more than 3 taps occcured, trigger ntap.
+                var tapEventName = tapNumber>=2 ? 'dbltap' : 'tap';
+                triggerEvent(e.target, tapEventName, {
+                    x : currentX,
+                    y : currentY
+                });
+                tapNumber = 0;
+            }else if( !isInTapLimits() || isHolding ){
+                tapNumber = 0;
             }
+        }, defaults.tapThreshold);
+
+        clearTimeout(holdTimer);
+        //if the user is already holding, do not initialize another hold. as it is, this causes bugs with multiple
+        // touch events. However, TODO: implement a 'multiple hold' event, to allow for multiple drag-and-drop
+        if(!isHolding){
+          holdTimer = setTimeout(function(){
+            if( isInHoldLimits() && touchStart){
+              //user is within the tap region and is still after hold threshold
+              isHolding = true;
+              //set the hold interval, every 50ms update the hold elements lastXY
+              holdInterval = setInterval(function(){
+                lastX = currentX;
+                lastY = currentY;
+              },50);
+              //we'll reference this when the user let's go
+              holdElement = e;
+              originalX = pointer.clientX;
+              originalY = pointer.clientY;
+              triggerEvent(holdElement.target, 'hold', {
+                x: currentX,
+                y: currentY,
+                touches: e.touches
+              });
+            }
+          }, defaults.holdThreshold);
         }
+
         //here we set the initial pinch to compare distances
         if(isPinch(e)){
           initialPinch =  getTouchPoints(e);
@@ -262,14 +254,15 @@ var touchme = function(args) {
           initialPinch['midPoint'] = getMidPoint(getTouchPoints(e));
 
         }
+
     });
 
     //track the movement / drag
     // detect pinch gesture
     setListener(document, touchDevice ? 'mousemove touchmove' : 'mousemove', function(e){
         var pointer = getPointer(e);
-        currentX = pointer.pageX;
-        currentY = pointer.pageY;
+        currentX = pointer.clientX;
+        currentY = pointer.clientY;
         //is the user is holding an item, it's being dragged
         if(isHolding){
           triggerEvent(holdElement.target, 'drag', {
@@ -310,13 +303,14 @@ var touchme = function(args) {
         touchStart = false;
         if(initialPinch){
           initialPinch = undefined;
-          triggerEvent(e.target, 'pinchrelease', {
-
-          });
+          triggerEvent(e.target, 'pinchrelease');
         }
 
         //if the user was holding something...
-        if(isHolding && e.touches.length === 0){
+        if(isHolding){
+          if(e.touches && e.touches.length > 0){
+            return false
+          }
             isHolding = false;
             clearInterval(holdInterval);
             triggerEvent(holdElement.target, 'holdrelease', {

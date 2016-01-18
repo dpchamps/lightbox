@@ -11,7 +11,8 @@ var nav = function() {
     , thumbs = document.querySelectorAll('.thumb img')
     , imageSet = {last : 0}
     , cache = lightbox.imgCache
-    , lightboxModal = document.getElementById('lightbox-modal');
+    , lightboxModal = document.getElementById('lightbox-modal')
+    ,  dbltapZoom = false;
 
   for(var i = 0; i<thumbs.length; i++){
     var image = thumbs[i];
@@ -19,8 +20,8 @@ var nav = function() {
         bigImage = image.dataset.img;
     imageSet[idx] = bigImage;
     imageSet.last = (imageSet.last < idx) ? idx : imageSet.last;
-
   }
+
   //add events
   lightbox.events.add(function thumbTap(e){
     e.stopPropagation();
@@ -35,6 +36,10 @@ var nav = function() {
       addImage(idx, image);
     });
   });
+  lightbox.events.add(function stopTapProp(e){
+    console.log('tap');
+    e.stopPropagation();
+  });
   lightbox.events.add(function disableDefault(e){
     e.preventDefault();
   });
@@ -44,7 +49,7 @@ var nav = function() {
   lightbox.events.add(function pinchListener(e){
     var
       img = e.target,
-      zoomScale = (e.distance - e.initialPinch.distance)/1000,
+      zoomScale = (e.distance - e.initialPinch.distance)/500,
       cX = e.midPoint.x,
       cY = e.midPoint.y,
       oX = e.initialPinch.midPoint.x,
@@ -53,36 +58,61 @@ var nav = function() {
       initialMatrix = lightbox.transform.getImageTransformMatrix(img, zoomScale, oX, oY);
       lightbox.transform.transformImage(img, matrix);
       lightbox.transform.translateImage(img, oX, oY, cX, cY, initialMatrix);
+  });
+  lightbox.events.add(function dbltapListener(e){
 
+    var
+      img = e.target,
+      maxZoom = 2,
+      zoomScale = (dbltapZoom) ? maxZoom : 0.02,
+      cX = e.x,
+      cY = e.y;
+    console.log("dbltap", cX, cY);
+    var interval = setInterval(function(){
+      zoomScale+=0.1;
+      var matrix = lightbox.transform.getImageTransformMatrix(img, zoomScale, cX, cY);
+      lightbox.transform.transformImage(img, matrix);
+      if(zoomScale >= maxZoom){
+        clearInterval(interval);
+      }
+    }, 25);
   });
   lightbox.events.add(function pinchReleaseListener(e){
-    console.log('pinch release');
   });
   lightbox.events.add(function holdreleaseListener(e){
-    console.log('hold release');
     var
-      distanceScale = 0.70,
-      distance = (e.lastX - e.originalX)*distanceScale,
-      el = e.target;
+      el = e.target,
+      box = el.getBoundingClientRect(),
+      navTarget = window.innerWidth*0.7,
+      tapEvent = new Event('tap');
+    if(box.right <= navTarget){
+      lightbox.controls.right.dispatchEvent(tapEvent);
+    }
+    if(box.left >= navTarget/2){
+      lightbox.controls.left.dispatchEvent(tapEvent);
+    }
+    if(box.width < window.innerWidth
+      && box.height < window.innerHeight
+      && box.right > navTarget
+      && box.left < navTarget/2){
+      var matrix = lightbox.transform.getElMatrix(el),
+          moveBy = matrix[4]/5,
+          moveInterval = setInterval(function(){
+            matrix[4] = matrix[4]-moveBy;
+            if(moveBy < 0 && matrix[4] > 0){
+              matrix[4] = 0;
+            }
+            if(moveBy > 0 && matrix[4] < 0){
+              matrix[4] = 0;
+            }
+            lightbox.transform.transformImage(el, matrix);
+            if(Math.abs(matrix[4]) <= 0){
+              clearInterval(moveInterval);
+            }
+          }, 15);
 
-    if(Math.abs(distance) > 25) {
-      /*
-       if(e.lastX > e.originalX){
-       leftAnimation(event);
-       }else{
-       rightAnimation(event)
-       }
-
-       }else{
-       /*
-       $(el).css({
-       'transform': 'translateX(0)',
-       '-webkit-transform': 'translateX(0)'
-       });
-       */
 
     }
-
     el.removeEventListener('mousemove', lightbox.events.get('translateMouseMove'));
     el.removeEventListener('touchmove', lightbox.events.get('translateTouchMove'));
     lightbox.events.remove('translateTouchMove');
@@ -96,10 +126,11 @@ var nav = function() {
       zoomScale = zoomScale*-1;
     }
     var matrix = lightbox.transform.getImageTransformMatrix(img, zoomScale, e.clientX, e.clientY);
-    console.log(matrix);
     lightbox.transform.transformImage(img, matrix);
   });
   var holdListener = lightbox.events.get('holdListener')
+    , stopTapProp = lightbox.events.get('stopTapProp')
+    , dbltapListener = lightbox.events.get('dbltapListener')
     , pinchListener = lightbox.events.get('pinchListener')
     , holdreleaseListener = lightbox.events.get('holdreleaseListener')
     , disableDefault = lightbox.events.get('disableDefault')
@@ -108,21 +139,18 @@ var nav = function() {
 
   function translateImageStart(img, x, y){
     var  initialMatrix =  lightbox.transform.getElMatrix(img);
+
     lightbox.events.add(function translateMouseMove(e){
       lightbox.transform.translateImage(img, x,y, e.x, e.y, initialMatrix);
     });
     lightbox.events.add(function translateTouchMove(e){
       if(e.touches.length > 1){
-        return false;
+        img.removeEventListener('touchmove', lightbox.events.get('translateTouchMove'));
       }
-      lightbox.transform.translateImage(img, x, y, e.touches[0].pageX, e.touches[0].pageY, initialMatrix);
+      lightbox.transform.translateImage(img, x, y, e.touches[0].clientX, e.touches[0].clientY, initialMatrix);
     });
     img.addEventListener('mousemove', lightbox.events.get('translateMouseMove') );
     img.addEventListener('touchmove', lightbox.events.get('translateTouchMove') );
-  }
-
-  function pinchMove(img, x, y){
-
   }
 
   function disableDrag(el){
@@ -130,22 +158,21 @@ var nav = function() {
     el.addEventListener('dragend', disableDefault);
     el.addEventListener('drag', disableDefault);
   }
-  function disableTouch(){
-    document.addEventListener('touchstart', disableDefault);
-    document.addEventListener('touchmove',disableDefault);
-    document.addEventListener('touchend', disableDefault);
+  function disableTouch(el){
+    el.addEventListener('touchstart', disableDefault);
+    el.addEventListener('touchmove',disableDefault);
   }
-  function enableTouch(){
-    document.removeEventListener('touchstart', disableDefault);
-    document.removeEventListener('touchmove',disableDefault);
-    document.removeEventListener('touchend', disableDefault);
+  function enableTouch(el){
+    el.removeEventListener('touchstart', disableDefault);
+    el.removeEventListener('touchmove',disableDefault);
   }
   function lightboxEnter(){
     lightboxModal.style.visibility = 'visible';
     document.body.style.overflow = 'hidden';
-
   }
-  function lightboxExit(){
+  function lightboxExit(e){
+    console.log(e.target);
+    e.stopPropagation();
     var image = lightboxModal.getElementsByTagName('img')[0];
     removeTouchListeners(image);
     removeImage(image);
@@ -154,9 +181,10 @@ var nav = function() {
   }
 
   function addTouchListeners(el){
-    console.log(el);
     disableDrag(el);
-    disableTouch();
+    disableTouch(document);
+    el.addEventListener('tap', stopTapProp);
+    el.addEventListener('dbltap', dbltapListener);
     el.addEventListener('hold', holdListener);
     el.addEventListener('pinch', pinchListener);
     el.addEventListener('holdrelease', holdreleaseListener);
@@ -164,7 +192,7 @@ var nav = function() {
     el.addEventListener('pinchrelease', pinchReleaseListener);
   }
   function removeTouchListeners(el){
-    enableTouch();
+    enableTouch(document);
     el.removeEventListener('hold', holdListener);
     el.removeEventListener('pinch', pinchListener);
     el.removeEventListener('holdrelease', holdreleaseListener);

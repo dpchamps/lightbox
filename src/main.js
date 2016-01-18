@@ -10,13 +10,18 @@ var lightbox = {
   bindEvents : require('./scripts/bindEvents'),
   controls : require('./modules/controls.js'),
   init : function(){
-    touchme({ holdThreshold: 5,
-      tapThreshold: 100,
-      precision: 20});
+
+    touchme({ holdThreshold: 50,
+      tapPrecision: 250,
+      tapThreshold: 250,
+      holdPrecision: 500});
     this.controls = this.controls();
     var self = this;
     require('domready')(function(){
       console.log("load", document.body);
+      document.addEventListener('touchend', function(e){
+        e.preventDefault();
+      });
       self.nav = self.nav();
       self.bindEvents();
     });
