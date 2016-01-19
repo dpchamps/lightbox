@@ -12,7 +12,7 @@ var nav = function() {
     , imageSet = {last : 0}
     , cache = lightbox.imgCache
     , lightboxModal = document.getElementById('lightbox-modal')
-    ,  dbltapZoom = false;
+    , dbltapZoom = false;
 
   for(var i = 0; i<thumbs.length; i++){
     var image = thumbs[i];
