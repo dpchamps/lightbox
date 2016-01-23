@@ -447,6 +447,275 @@ process.chdir = function (dir) {
 process.umask = function() { return 0; };
 
 },{}],15:[function(require,module,exports){
+/* globals */
+
+"use strict";
+var disableDefault = function () {
+  this.events.add(function disableDefault(e){
+    e.preventDefault();
+  });
+};
+
+module.exports = disableDefault;
+
+},{}],16:[function(require,module,exports){
+"use strict";
+
+var imageDbltap = function () {
+  var lightbox = this;
+  lightbox.events.add(function dbltapListener(e){
+
+    var
+      img = e.target,
+      maxZoom = lightbox.transform.maxZoom,
+      currentZoom = lightbox.transform.getXScale(img),
+      zoomScale = currentZoom / maxZoom,
+      cX = e.x,
+      cY = e.y;
+
+    var interval = setInterval(function(){
+      var matrix = lightbox.transform.getImageTransformMatrix(img, zoomScale, cX, cY);
+      currentZoom = lightbox.transform.getXScale(img);
+      lightbox.transform.transformImage(img, matrix);
+      if(currentZoom >= maxZoom){
+        clearInterval(interval);
+      }
+    }, 15);
+  });
+};
+
+module.exports = imageDbltap;
+
+},{}],17:[function(require,module,exports){
+
+"use strict";
+var imageHold = function () {
+  var lightbox = this;
+  function translateImageStart(img, x, y){
+    var  initialMatrix =  lightbox.transform.getElMatrix(img);
+    lightbox.events.add(function translateMouseMove(e){
+      lightbox.transform.translateImage(img, x,y, e.x, e.y, initialMatrix);
+    });
+    lightbox.events.add(function translateTouchMove(e){
+      if(e.touches.length > 1){
+        img.removeEventListener('touchmove', lightbox.events.get('translateTouchMove'));
+      }
+      lightbox.transform.translateImage(img, x, y, e.touches[0].clientX, e.touches[0].clientY, initialMatrix);
+    });
+    img.addEventListener('mousemove', lightbox.events.get('translateMouseMove') );
+    img.addEventListener('touchmove', lightbox.events.get('translateTouchMove') );
+  }
+
+
+  lightbox.events.add(function holdListener(e){
+    translateImageStart(e.target, e.x, e.y);
+  });
+};
+
+module.exports = imageHold;
+
+},{}],18:[function(require,module,exports){
+
+"use strict";
+var imageHoldRelease = function () {
+  var lightbox = this;
+  lightbox.events.add(function holdreleaseListener(e){
+    var
+      el = e.target,
+      box = el.getBoundingClientRect(),
+      navTarget = window.innerWidth*0.7,
+      tapEvent = new Event('tap'),
+      distance = Math.abs(e.originalX- e.lastX);
+
+    if(box.right <= navTarget && distance > 150){
+      lightbox.controls.right.dispatchEvent(tapEvent);
+    }
+    if(box.left >= navTarget/2 && distance > 150){
+      lightbox.controls.left.dispatchEvent(tapEvent);
+    }
+    if(box.width < window.innerWidth
+      && box.height < window.innerHeight
+      && distance < 150){
+      var matrix = lightbox.transform.getElMatrix(el),
+        moveBy = matrix[4]/5,
+        moveInterval = setInterval(function(){
+          matrix[4] = matrix[4]-moveBy;
+          if(moveBy < 0 && matrix[4] > 0){
+            matrix[4] = 0;
+          }
+          if(moveBy > 0 && matrix[4] < 0){
+            matrix[4] = 0;
+          }
+          lightbox.transform.transformImage(el, matrix);
+          if(Math.abs(matrix[4]) <= 0){
+            clearInterval(moveInterval);
+          }
+        }, 15);
+    }
+    el.removeEventListener('mousemove', lightbox.events.get('translateMouseMove'));
+    el.removeEventListener('touchmove', lightbox.events.get('translateTouchMove'));
+    lightbox.events.remove('translateTouchMove');
+    lightbox.events.remove('translateMouseMove');
+  });
+};
+
+module.exports = imageHoldRelease;
+
+},{}],19:[function(require,module,exports){
+
+"use strict";
+var imagePinch = function () {
+  var lightbox = this;
+  lightbox.events.add(function pinchListener(e){
+    var
+      img = e.target,
+      zoomScale = (e.distance - e.initialPinch.distance)/500,
+      cX = e.midPoint.x,
+      cY = e.midPoint.y,
+      oX = e.initialPinch.midPoint.x,
+      oY = e.initialPinch.midPoint.y,
+      matrix = lightbox.transform.getImageTransformMatrix(img, zoomScale, cX, cY),
+      initialMatrix = lightbox.transform.getImageTransformMatrix(img, zoomScale, oX, oY);
+    lightbox.transform.transformImage(img, matrix);
+    lightbox.transform.translateImage(img, oX, oY, cX, cY, initialMatrix);
+  });
+};
+
+module.exports = imagePinch;
+
+},{}],20:[function(require,module,exports){
+
+"use strict";
+var imagePinchRelease = function () {
+  this.events.add(function pinchReleaseListener(e){
+
+  });
+};
+
+module.exports = imagePinchRelease;
+
+},{}],21:[function(require,module,exports){
+
+"use strict";
+var imageScrollWheel = function () {
+  var lightbox = this;
+  lightbox.events.add(function scrollWheelListener(e){
+    var img = e.target;
+    var delta = e.deltaY,
+      zoomScale = -0.10;
+    if(delta < 0){
+      zoomScale = zoomScale*-1;
+    }
+    var matrix = lightbox.transform.getImageTransformMatrix(img, zoomScale, e.clientX, e.clientY);
+    lightbox.transform.transformImage(img, matrix);
+  });
+};
+
+module.exports = imageScrollWheel;
+
+},{}],22:[function(require,module,exports){
+
+"use strict";
+var imageSwipe = function () {
+  var lightbox = this;
+  lightbox.events.add(function swipeListener(e){
+    var quadrant = Math.floor((e.direction.degrees/90)%4 +1),
+      image = e.target,
+      matrix = lightbox.transform.getElMatrix(image),
+      scale = matrix[0],
+      slideScaleX = e.distance.x,
+      slideScaleY = e.distance.y,
+      isMultipleTouch = (e.touches && e.touches.length > 1),
+      threshold = 75;
+    if(isMultipleTouch){
+      return false;
+    }
+    if(scale > 1.5){
+      if(e.distance.x > threshold && e.distance.y <= threshold){
+        switch(quadrant) {
+          case 1:
+          case 4:
+            lightbox.transform.smoothTranslate(image, 5, matrix[4]+slideScaleX, matrix[5], 2);
+            break;
+          case 2:
+          case 3:
+            lightbox.transform.smoothTranslate(image, 5, matrix[4]-slideScaleX, matrix[5], 2);
+            break;
+        }
+      }
+      if(e.distance.y > threshold && e.distance.x <= threshold){
+        switch (quadrant) {
+          case 1:
+          case 2:
+            lightbox.transform.smoothTranslate(image, 5, matrix[4], matrix[5]-slideScaleY, 4);
+            break;
+          case 3:
+          case 4:
+            lightbox.transform.smoothTranslate(image, 5, matrix[4], matrix[5]+slideScaleY, 4);
+            break;
+        }
+      }
+      if(e.distance.y > threshold && e.distance.x > threshold){
+        switch(quadrant){
+          case 1:
+            //up & right
+            lightbox.transform.smoothTranslate(image, 5, matrix[4]+slideScaleX, matrix[5]-slideScaleY, 4);
+            break;
+          case 2:
+            //up & left
+            lightbox.transform.smoothTranslate(image, 5, matrix[4]-slideScaleX, matrix[5]-slideScaleY, 4);
+            break;
+          case 3:
+            //down & left
+            lightbox.transform.smoothTranslate(image, 5, matrix[4]-slideScaleX, matrix[5]+slideScaleY, 4);
+            break;
+          case 4:
+            //down & right
+            lightbox.transform.smoothTranslate(image, 5, matrix[4]+slideScaleX, matrix[5]+slideScaleY, 4);
+            break
+        }
+      }
+    }
+
+  });
+};
+
+module.exports = imageSwipe;
+
+},{}],23:[function(require,module,exports){
+"use strict";
+var stopTapProp = function () {
+  this.events.add(function stopTapProp(e){
+    e.stopPropagation();
+  });
+};
+module.exports = stopTapProp;
+
+},{}],24:[function(require,module,exports){
+
+"use strict";
+var thumbTap = function () {
+  var nav = this.nav,
+      cache = this.imgCache;
+  this.events.add(function thumbTap(e){
+    e.stopPropagation();
+    var
+      imageSet = nav.imageSet(),
+      img = this.getElementsByTagName('img')[0],
+      idx = img.dataset.idx,
+      src = imageSet[idx];
+    nav.enter();
+    cache.loadImage(src).then(function(image){
+      if(! cache.isComplete()){
+        cache.cacheImages(imageSet);
+      }
+      nav.addImage(idx, image);
+    });
+  });
+};
+module.exports = thumbTap;
+
+},{}],25:[function(require,module,exports){
 "use strict";
 require('./modules/polyfill-checks.js');
 var lightbox = {
@@ -459,7 +728,7 @@ var lightbox = {
   bindEvents : require('./scripts/bindEvents'),
   controls : require('./modules/controls.js'),
   init : function(){
-
+    require('./modules/loadEvents.js')(this);
     touchme({ holdThreshold: 50,
       swipeThreshold: 200,
       swipePrecision: 250,
@@ -469,7 +738,6 @@ var lightbox = {
     this.controls = this.controls();
     var self = this;
     require('domready')(function(){
-      console.log("load", document.body);
       document.addEventListener('touchend', function(e){
         e.preventDefault();
       });
@@ -483,7 +751,7 @@ window.lightbox = lightbox;
 
 
 
-},{"./modules/animations.js":16,"./modules/controls.js":17,"./modules/events.js":18,"./modules/imgCache.js":19,"./modules/nav.js":20,"./modules/polyfill-checks.js":21,"./modules/transform.js":22,"./modules/util.js":23,"./scripts/bindEvents":24,"domready":13}],16:[function(require,module,exports){
+},{"./modules/animations.js":26,"./modules/controls.js":27,"./modules/events.js":28,"./modules/imgCache.js":29,"./modules/loadEvents.js":30,"./modules/nav.js":31,"./modules/polyfill-checks.js":32,"./modules/transform.js":33,"./modules/util.js":34,"./scripts/bindEvents":35,"domready":13}],26:[function(require,module,exports){
 /*
 functions that move the image around the lightbox
 
@@ -560,7 +828,7 @@ var translate = function(image){
 
 module.exports = translate;
 
-},{}],17:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 var controls = function(){
   var
       modal = document.createElement('div')
@@ -593,7 +861,7 @@ var controls = function(){
 module.exports = controls;
 
 
-},{}],18:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 /**
  * lightbox events / event  handlers
  *
@@ -779,7 +1047,7 @@ events.clear = function(){
 
 module.exports = events;
 
-},{}],19:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 "use strict";
 var imgCache = function(){
 
@@ -825,7 +1093,25 @@ var imgCache = function(){
 
 module.exports = imgCache();
 
-},{}],20:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
+/* globals */
+
+"use strict";
+var loadEvents = function(context) {
+  require('./../eventlisteners/disableDefault').call(context);
+  require('./../eventlisteners/imageDblTap').call(context);
+  require('./../eventlisteners/imageHold').call(context);
+  require('./../eventlisteners/imageHoldRelease').call(context);
+  require('./../eventlisteners/imagePinch').call(context);
+  require('./../eventlisteners/imagePinchRelease').call(context);
+  require('./../eventlisteners/imageScrollWheel').call(context);
+  require('./../eventlisteners/imageSwipe').call(context);
+  require('./../eventlisteners/stopTapProp').call(context);
+};
+
+module.exports = loadEvents;
+
+},{"./../eventlisteners/disableDefault":15,"./../eventlisteners/imageDblTap":16,"./../eventlisteners/imageHold":17,"./../eventlisteners/imageHoldRelease":18,"./../eventlisteners/imagePinch":19,"./../eventlisteners/imagePinchRelease":20,"./../eventlisteners/imageScrollWheel":21,"./../eventlisteners/imageSwipe":22,"./../eventlisteners/stopTapProp":23}],31:[function(require,module,exports){
 
 
 "use strict";
@@ -839,184 +1125,14 @@ var nav = function() {
     , thumbs = document.querySelectorAll('.thumb img')
     , imageSet = {last : 0}
     , cache = lightbox.imgCache
-    , lightboxModal = document.getElementById('lightbox-modal')
-    ,  dbltapZoom = false;
+    , lightboxModal = document.getElementById('lightbox-modal');
 
   for(var i = 0; i<thumbs.length; i++){
     var image = thumbs[i];
-    var idx = image.dataset.idx,
-        bigImage = image.dataset.img;
-    imageSet[idx] = bigImage;
+    var idx = image.dataset.idx;
+    imageSet[idx] = image.dataset.img;
     imageSet.last = (imageSet.last < idx) ? idx : imageSet.last;
   }
-
-  //add events
-  lightbox.events.add(function thumbTap(e){
-    e.stopPropagation();
-    var img = this.getElementsByTagName('img')[0];
-    var idx = img.dataset.idx,
-      src = imageSet[idx];
-    lightboxEnter();
-    cache.loadImage(src).then(function(image){
-      if(! cache.isComplete()){
-        cache.cacheImages(imageSet);
-      }
-      addImage(idx, image);
-    });
-  });
-  lightbox.events.add(function stopTapProp(e){
-    console.log('tap');
-    e.stopPropagation();
-  });
-  lightbox.events.add(function disableDefault(e){
-    e.preventDefault();
-  });
-  lightbox.events.add(function holdListener(e){
-    translateImageStart(this, e.x, e.y);
-  });
-  lightbox.events.add(function pinchListener(e){
-    var
-      img = e.target,
-      zoomScale = (e.distance - e.initialPinch.distance)/500,
-      cX = e.midPoint.x,
-      cY = e.midPoint.y,
-      oX = e.initialPinch.midPoint.x,
-      oY = e.initialPinch.midPoint.y,
-      matrix = lightbox.transform.getImageTransformMatrix(img, zoomScale, cX, cY),
-      initialMatrix = lightbox.transform.getImageTransformMatrix(img, zoomScale, oX, oY);
-      lightbox.transform.transformImage(img, matrix);
-      lightbox.transform.translateImage(img, oX, oY, cX, cY, initialMatrix);
-  });
-  lightbox.events.add(function dbltapListener(e){
-
-    var
-      img = e.target,
-      maxZoom = 2,
-      zoomScale = (dbltapZoom) ? maxZoom : 0.02,
-      cX = e.x,
-      cY = e.y;
-
-    var interval = setInterval(function(){
-      zoomScale+=0.1;
-      var matrix = lightbox.transform.getImageTransformMatrix(img, zoomScale, cX, cY);
-      lightbox.transform.transformImage(img, matrix);
-      if(zoomScale >= maxZoom){
-        clearInterval(interval);
-      }
-    }, 25);
-  });
-  lightbox.events.add(function pinchReleaseListener(e){
-  });
-  lightbox.events.add(function holdreleaseListener(e){
-    var
-      el = e.target,
-      box = el.getBoundingClientRect(),
-      navTarget = window.innerWidth*0.7,
-      tapEvent = new Event('tap'),
-      distance = Math.abs(e.originalX- e.lastX);
-
-    if(box.right <= navTarget && distance > 150){
-      lightbox.controls.right.dispatchEvent(tapEvent);
-    }
-    if(box.left >= navTarget/2 && distance > 150){
-      lightbox.controls.left.dispatchEvent(tapEvent);
-    }
-    if(box.width < window.innerWidth
-      && box.height < window.innerHeight
-      && distance < 150){
-      var matrix = lightbox.transform.getElMatrix(el),
-          moveBy = matrix[4]/5,
-          moveInterval = setInterval(function(){
-            matrix[4] = matrix[4]-moveBy;
-            if(moveBy < 0 && matrix[4] > 0){
-              matrix[4] = 0;
-            }
-            if(moveBy > 0 && matrix[4] < 0){
-              matrix[4] = 0;
-            }
-            lightbox.transform.transformImage(el, matrix);
-            if(Math.abs(matrix[4]) <= 0){
-              clearInterval(moveInterval);
-            }
-          }, 15);
-
-
-    }
-    el.removeEventListener('mousemove', lightbox.events.get('translateMouseMove'));
-    el.removeEventListener('touchmove', lightbox.events.get('translateTouchMove'));
-    lightbox.events.remove('translateTouchMove');
-    lightbox.events.remove('translateMouseMove');
-  });
-  lightbox.events.add(function scrollWheelListener(e){
-    var img = e.target;
-    var delta = e.deltaY,
-      zoomScale = -0.10;
-    if(delta < 0){
-      zoomScale = zoomScale*-1;
-    }
-    var matrix = lightbox.transform.getImageTransformMatrix(img, zoomScale, e.clientX, e.clientY);
-    lightbox.transform.transformImage(img, matrix);
-  });
-  lightbox.events.add(function swipeListener(e){
-    var quadrant = Math.floor((e.direction.degrees/90)%4 +1),
-      image = e.target,
-      matrix = lightbox.transform.getElMatrix(image),
-      scale = matrix[0],
-      slideScaleX = e.distance.x,
-      slideScaleY = e.distance.y,
-      isMultipleTouch = (e.touches && e.touches.length > 1),
-      threshold = 75;
-    if(isMultipleTouch){
-      return false;
-    }
-    if(scale > 1.5){
-      if(e.distance.x > threshold && e.distance.y <= threshold){
-        switch(quadrant) {
-          case 1:
-          case 4:
-            lightbox.transform.smoothTranslate(image, 5, matrix[4]+slideScaleX, matrix[5], 2);
-                break;
-          case 2:
-          case 3:
-            lightbox.transform.smoothTranslate(image, 5, matrix[4]-slideScaleX, matrix[5], 2);
-            break;
-        }
-      }
-      if(e.distance.y > threshold && e.distance.x <= threshold){
-        switch (quadrant) {
-          case 1:
-          case 2:
-            lightbox.transform.smoothTranslate(image, 5, matrix[4], matrix[5]-slideScaleY, 4);
-            break;
-          case 3:
-          case 4:
-            lightbox.transform.smoothTranslate(image, 5, matrix[4], matrix[5]+slideScaleY, 4);
-            break;
-        }
-      }
-      if(e.distance.y > threshold && e.distance.x > threshold){
-        switch(quadrant){
-          case 1:
-            //up & right
-            lightbox.transform.smoothTranslate(image, 5, matrix[4]+slideScaleX, matrix[5]-slideScaleY, 4);
-            break;
-          case 2:
-            //up & left
-            lightbox.transform.smoothTranslate(image, 5, matrix[4]-slideScaleX, matrix[5]-slideScaleY, 4);
-            break;
-          case 3:
-            //down & left
-            lightbox.transform.smoothTranslate(image, 5, matrix[4]-slideScaleX, matrix[5]+slideScaleY, 4);
-            break;
-          case 4:
-            //down & right
-            lightbox.transform.smoothTranslate(image, 5, matrix[4]+slideScaleX, matrix[5]+slideScaleY, 4);
-            break
-        }
-      }
-    }
-
-  });
   var holdListener = lightbox.events.get('holdListener')
     , stopTapProp = lightbox.events.get('stopTapProp')
     , dbltapListener = lightbox.events.get('dbltapListener')
@@ -1027,21 +1143,6 @@ var nav = function() {
     , pinchReleaseListener = lightbox.events.get('pinchReleaseListener')
     , swipeListener = lightbox.events.get('swipeListener');
 
-  function translateImageStart(img, x, y){
-    var  initialMatrix =  lightbox.transform.getElMatrix(img);
-
-    lightbox.events.add(function translateMouseMove(e){
-      lightbox.transform.translateImage(img, x,y, e.x, e.y, initialMatrix);
-    });
-    lightbox.events.add(function translateTouchMove(e){
-      if(e.touches.length > 1){
-        img.removeEventListener('touchmove', lightbox.events.get('translateTouchMove'));
-      }
-      lightbox.transform.translateImage(img, x, y, e.touches[0].clientX, e.touches[0].clientY, initialMatrix);
-    });
-    img.addEventListener('mousemove', lightbox.events.get('translateMouseMove') );
-    img.addEventListener('touchmove', lightbox.events.get('translateTouchMove') );
-  }
 
   function disableDrag(el){
     el.addEventListener('dragstart', disableDefault);
@@ -1139,16 +1240,21 @@ var nav = function() {
     });
   }
   return {
+    addImage: addImage,
+    removeImage: removeImage,
     next : nextImage,
     prev : prevImage,
     exit : lightboxExit,
-    enter : lightboxEnter
+    enter : lightboxEnter,
+    imageSet : function(){
+      return imageSet;
+    }
   };
 };
 
 module.exports = nav;
 
-},{}],21:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 /*globals Modernizr*/
 /*
 The lightbox relies on serveral features that might not be widely supported.
@@ -1172,12 +1278,15 @@ module.exports = (function(){
 
 })();
 
-},{"browsernizr":1,"browsernizr/test/dom/classlist.js":11,"browsernizr/test/es6/promises.js":12,"classlist-polyfill":"classList","es6-promise":"promise"}],22:[function(require,module,exports){
+},{"browsernizr":1,"browsernizr/test/dom/classlist.js":11,"browsernizr/test/es6/promises.js":12,"classlist-polyfill":"classList","es6-promise":"promise"}],33:[function(require,module,exports){
 /* globals */
 
 "use strict";
 
-var transform = {};
+var transform = {
+  maxZoom : 3.2,
+  minZoom : 1/2
+};
 transform.matrixArray = function(matrix){
   matrix = matrix.split("(")[1];
   matrix = matrix.split(")")[0];
@@ -1222,49 +1331,94 @@ transform.getFocusPoint = function(clientX, clientY, img, zoomScale){
     left = viewportCX - imgCX,
     top = viewPortCY - imgCY;
   return {
-    'x' : (clientX+left),
-    'y' : (clientY+top),
+    'x' : clientX,
+    'y' : clientY,
     'cX': imgCX+rect.left,
     'cY': imgCY+rect.top
   };
 };
-transform.getCalcFocusPoint = function(zoomScale, clientX, clientY, img){
+transform.getCalcDistance = function(zoomScale, clientX, clientY, img){
   var
-    width = parseInt(window.getComputedStyle(img).width.split('px')[0], 10),
-    height = parseInt(window.getComputedStyle(img).height.split('px')[0], 10),
-    calcScale = (zoomScale >= 0) ? zoomScale+1 : zoomScale -1,
-    viewportCX = window.innerWidth / 2,
-    viewportCY = window.innerHeight / 2,
-    calcWidth =width * calcScale,
-    calcHeight = height * calcScale,
-    calcLeft = Math.round( viewportCX - (calcWidth/2)),
-    calcTop = Math.round(viewportCY - (calcHeight/2));
-  return {
-    'x': clientX-calcLeft,
-    'y': clientY-calcTop,
-    'cX': (calcWidth/2)+calcLeft,
-    'cY': (calcHeight/2)+calcTop
+      rect = img.getBoundingClientRect()
+    , cX = (rect.width/2)+rect.left
+    , cY = (rect.height/2)+rect.top
+    , xFromCenter = Math.abs(clientX - cX)
+    , yFromCenter = Math.abs(clientY - cY)
+    , distance = Math.sqrt( (yFromCenter*yFromCenter) + (xFromCenter*xFromCenter) );
+
+  //console.log(distance*zoomScale);
+  //console.log(rect.width);
+
+
+  return distance*zoomScale
+};
+
+transform.cloneZoom = function (img, matrix, newX, newY){
+  var clone = img.cloneNode(true),
+      newMatrix = matrix.slice(0);
+
+  newMatrix[4] = newMatrix[4]+newX;
+  newMatrix[5] = newMatrix[5]+newY;
+  clone.classList.add('hidden');
+  this.transformImage(clone, newMatrix);
+
+  return clone;
+};
+transform.zoomBounds = function(img, matrix, xDist, yDist){
+  var clone = this.cloneZoom(img, matrix, xDist, yDist);
+  img.parentNode.appendChild(clone);
+  var rect = clone.getBoundingClientRect(),
+      newX, newY,
+      oldX = matrix[4], oldY = matrix[5],
+      bottom = window.innerHeight-rect.bottom,
+      right = window.innerWidth-rect.right;
+  //moving the y-axis
+  if(rect.height > window.innerHeight){
+    if(rect.top > 0){
+      newY = oldY+(yDist-rect.top);
+    }else if(bottom > 0){
+      newY = oldY+(yDist+bottom);
+    }else{
+      newY = oldY+yDist;
+    }
+  }else{
+    newY = 0;
+  }
+  if(rect.width > window.innerWidth){
+    if(rect.left > 0){
+      newX = oldX+(xDist-rect.left);
+    }else if (right > 0){
+      newX = oldX+(xDist+right);
+    }else{
+      newX = oldX+xDist;
+    }
+  }else{
+    newX = 0;
+  }
+  img.parentNode.removeChild(clone);
+  return{
+    x: newX,
+    y: newY
   }
 };
-transform.imageInBounds = function(rect, axis){
-  var
-    screenPercentage = 0.25,
-    vpW = (window.innerWidth/2) * screenPercentage,
-    vpH = (window.innerHeight/2) * screenPercentage,
-    gapFromLeft = rect.left,
-    gapFromRight =window.innerWidth - rect.right,
-    gapFromTop = rect.top,
-    gapFromBottom = window.innerHeight - rect.bottom,
-    boundsCheck = false;
-  if(axis === 'x' || axis === 'X'){
-    boundsCheck = (gapFromLeft < vpW && gapFromRight < vpW);
-  }else if(axis === 'y' || axis === 'Y'){
-    boundsCheck = (gapFromTop < vpH && gapFromBottom < vpH);
-  }else {
-    throw new Error('must define axis');
-  }
 
-  return boundsCheck;
+transform.getNewFocusPoint = function(zoomScale, clientX, clientY, img){
+  var
+      focusPoint = this.getFocusPoint(clientX, clientY, img)
+    , x_from_center = focusPoint.x - focusPoint.cX
+    , y_from_center = focusPoint.y - focusPoint.cY
+    , dist = Math.sqrt( Math.pow(x_from_center, 2) + Math.pow(y_from_center, 2))
+    , calcDistance = dist*((zoomScale))
+    , angle = Math.atan2((y_from_center), x_from_center)
+    , move = calcDistance
+    , newX = clientX + (Math.cos(angle) * move)
+    , newY = clientY + (Math.sin(angle) * move);
+  return {
+    x : newX,
+    y : newY,
+    distanceX : clientX-newX,
+    distanceY : clientY-newY
+  }
 };
 transform.getImageTransformMatrix = function(img, zoomScale, clientX, clientY){
   var transformStyle = window.getComputedStyle(img).transform;
@@ -1273,49 +1427,19 @@ transform.getImageTransformMatrix = function(img, zoomScale, clientX, clientY){
     transformStyle = window.getComputedStyle(img).transform;
   }
   var
-    focusPoint = this.getFocusPoint(clientX, clientY, img),
-    calcFocusPoint = this.getCalcFocusPoint(zoomScale, clientX,clientY, img),
-    //calcFocusPointTEST = this.getFocusPoint(clientX,clientY, img, zoomScale),
-    x_from_center = focusPoint.x - focusPoint.cX,
-    y_from_center = focusPoint.y - focusPoint.cY,
-    angle = Math.atan2((y_from_center), x_from_center),
-    length = Math.sqrt( Math.pow(x_from_center, 2) + Math.pow(y_from_center, 2)),
-    scaleFactor = Math.abs(zoomScale)+1,
-    newPoint ={
-      'x' : (scaleFactor * length * Math.cos(angle)) + calcFocusPoint.cX,
-      'y' : (scaleFactor * length * Math.sin(angle)) + calcFocusPoint.cY
-    },
-    maxZoom = 2.5,
-    minZoom = 1/3,
+    newPoint = this.getNewFocusPoint(zoomScale, clientX, clientY, img),
+    maxZoom = this.maxZoom,
+    minZoom = this.minZoom,
   //scale the image by delta
-    matrix = this.matrixArray(transformStyle),
-    transDirection = zoomScale >= 0 ? 1 : -1,
-    distanceX = (focusPoint.x - newPoint.x),
-    distanceY = (focusPoint.y - newPoint.y),
-    imgRect = img.getBoundingClientRect();
+    matrix = this.matrixArray(transformStyle);
+
   if(   ((matrix[0] + zoomScale) <= maxZoom )
     && ((matrix[0] + zoomScale) >= minZoom )){
-
     matrix[0] = matrix[0] + zoomScale;
     matrix[3] = matrix[3]  + zoomScale;
-
-    if(transDirection > 0){
-      //check if image is leaving the viewport
-      if(this.imageInBounds(imgRect, 'x')){
-        matrix[4] =  distanceX;
-      }
-      if(this.imageInBounds(imgRect, 'y')){
-        matrix[5] = distanceY;
-      }
-    }else{
-      if(matrix[0] <= 1){
-        matrix[4] = 0;
-        matrix[5] = 0;
-      }else{
-        matrix[4] = parseFloat(matrix[4])-(parseFloat(matrix[4])/6);
-        matrix[5] = parseFloat(matrix[5])-(parseFloat(matrix[5])/6);
-      }
-    }
+    var panDistance = this.zoomBounds(img, matrix, newPoint.distanceX, newPoint.distanceY);
+    matrix[4] = panDistance.x;
+    matrix[5] = panDistance.y;
   }else{
     matrix[0] = ((matrix[0] + zoomScale) >= maxZoom) ? maxZoom : minZoom;
     matrix[3] = ((matrix[0] + zoomScale) >= maxZoom) ? maxZoom : minZoom;
@@ -1341,12 +1465,10 @@ transform.yAxisBounds = function(image, y, distance, curY){
 transform.translateImage = function(el, oX, oY, nX, nY, initialMatrix){
   var
     image = el,
-    box = image.getBoundingClientRect(),
     distanceScale = 0.75,
     xDistance = (nX - oX)*distanceScale,
     yDistance = (nY - oY)*distanceScale,
     matrix = this.getElMatrix(el);
-
   matrix[4] =  initialMatrix[4] + xDistance;
   matrix[5] = this.yAxisBounds(image, initialMatrix[5], yDistance, matrix[5]);
   this.transformImage(image, matrix);
@@ -1392,7 +1514,7 @@ transform.smoothTranslate = function(el, ms, x, y, precision){
 };
 module.exports = transform;
 
-},{}],23:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 /**
  * utilities functions, top level selector, etc
  */
@@ -1459,7 +1581,7 @@ var util = function(sel){
 
 module.exports = util;
 
-},{}],24:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 /* globals */
 
 "use strict";
@@ -1467,6 +1589,7 @@ var bindEvents = function () {
   if(this === 'undefined'){
     throw new Error();
   }
+  require('./../eventlisteners/thumbTap').call(this);
   var
       lightbox = this
     , thumbTap = lightbox.events.get('thumbTap');
@@ -1482,7 +1605,7 @@ var bindEvents = function () {
 
 module.exports = bindEvents;
 
-},{}],"classList":[function(require,module,exports){
+},{"./../eventlisteners/thumbTap":24}],"classList":[function(require,module,exports){
 /*
  * classList.js: Cross-browser full element.classList implementation.
  * 2014-07-23
@@ -2694,4 +2817,4 @@ if ("document" in window.self) {
 
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":14}]},{},[15]);
+},{"_process":14}]},{},[25]);

@@ -5,6 +5,7 @@ var bindEvents = function () {
   if(this === 'undefined'){
     throw new Error();
   }
+  require('./../eventlisteners/thumbTap').call(this);
   var
       lightbox = this
     , thumbTap = lightbox.events.get('thumbTap');

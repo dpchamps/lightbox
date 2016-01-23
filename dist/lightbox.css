@@ -136,6 +136,23 @@ http://tobiasahlin.com/spinkit/
   z-index: 1000;
   text-shadow: -1px 1px 1px black; }
 
+.hidden {
+  visibility: hidden; }
+
+#debug {
+  width: 10px;
+  height: 10px;
+  background-color: #0b97c4;
+  position: absolute;
+  z-index: 999999999; }
+
+#debug2 {
+  width: 10px;
+  height: 10px;
+  background-color: darkred;
+  position: absolute;
+  z-index: 999999999; }
+
 .fadeIn {
   opacity: 1;
   visibility: visible !important; }

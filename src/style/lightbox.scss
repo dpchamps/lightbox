@@ -56,3 +56,19 @@ $lightbox-control-height : 30px;
   z-index: $zIndex-10;
   text-shadow: -1px 1px 1px darken($black, 100%);
 }
+.hidden{
+  visibility: hidden;
+}
+#debug{
+  width:10px;
+  height:10px;
+  background-color: #0b97c4;
+  position: absolute;
+  z-index: 999999999;
+}#debug2{
+  width:10px;
+  height:10px;
+  background-color: darkred;
+  position: absolute;
+  z-index: 999999999;
+}

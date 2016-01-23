@@ -2,7 +2,10 @@
 
 "use strict";
 
-var transform = {};
+var transform = {
+  maxZoom : 3.2,
+  minZoom : 1/2
+};
 transform.matrixArray = function(matrix){
   matrix = matrix.split("(")[1];
   matrix = matrix.split(")")[0];
@@ -47,49 +50,94 @@ transform.getFocusPoint = function(clientX, clientY, img, zoomScale){
     left = viewportCX - imgCX,
     top = viewPortCY - imgCY;
   return {
-    'x' : (clientX+left),
-    'y' : (clientY+top),
+    'x' : clientX,
+    'y' : clientY,
     'cX': imgCX+rect.left,
     'cY': imgCY+rect.top
   };
 };
-transform.getCalcFocusPoint = function(zoomScale, clientX, clientY, img){
+transform.getCalcDistance = function(zoomScale, clientX, clientY, img){
   var
-    width = parseInt(window.getComputedStyle(img).width.split('px')[0], 10),
-    height = parseInt(window.getComputedStyle(img).height.split('px')[0], 10),
-    calcScale = (zoomScale >= 0) ? zoomScale+1 : zoomScale -1,
-    viewportCX = window.innerWidth / 2,
-    viewportCY = window.innerHeight / 2,
-    calcWidth =width * calcScale,
-    calcHeight = height * calcScale,
-    calcLeft = Math.round( viewportCX - (calcWidth/2)),
-    calcTop = Math.round(viewportCY - (calcHeight/2));
-  return {
-    'x': clientX-calcLeft,
-    'y': clientY-calcTop,
-    'cX': (calcWidth/2)+calcLeft,
-    'cY': (calcHeight/2)+calcTop
+      rect = img.getBoundingClientRect()
+    , cX = (rect.width/2)+rect.left
+    , cY = (rect.height/2)+rect.top
+    , xFromCenter = Math.abs(clientX - cX)
+    , yFromCenter = Math.abs(clientY - cY)
+    , distance = Math.sqrt( (yFromCenter*yFromCenter) + (xFromCenter*xFromCenter) );
+
+  //console.log(distance*zoomScale);
+  //console.log(rect.width);
+
+
+  return distance*zoomScale
+};
+
+transform.cloneZoom = function (img, matrix, newX, newY){
+  var clone = img.cloneNode(true),
+      newMatrix = matrix.slice(0);
+
+  newMatrix[4] = newMatrix[4]+newX;
+  newMatrix[5] = newMatrix[5]+newY;
+  clone.classList.add('hidden');
+  this.transformImage(clone, newMatrix);
+
+  return clone;
+};
+transform.zoomBounds = function(img, matrix, xDist, yDist){
+  var clone = this.cloneZoom(img, matrix, xDist, yDist);
+  img.parentNode.appendChild(clone);
+  var rect = clone.getBoundingClientRect(),
+      newX, newY,
+      oldX = matrix[4], oldY = matrix[5],
+      bottom = window.innerHeight-rect.bottom,
+      right = window.innerWidth-rect.right;
+  //moving the y-axis
+  if(rect.height > window.innerHeight){
+    if(rect.top > 0){
+      newY = oldY+(yDist-rect.top);
+    }else if(bottom > 0){
+      newY = oldY+(yDist+bottom);
+    }else{
+      newY = oldY+yDist;
+    }
+  }else{
+    newY = 0;
+  }
+  if(rect.width > window.innerWidth){
+    if(rect.left > 0){
+      newX = oldX+(xDist-rect.left);
+    }else if (right > 0){
+      newX = oldX+(xDist+right);
+    }else{
+      newX = oldX+xDist;
+    }
+  }else{
+    newX = 0;
+  }
+  img.parentNode.removeChild(clone);
+  return{
+    x: newX,
+    y: newY
   }
 };
-transform.imageInBounds = function(rect, axis){
-  var
-    screenPercentage = 0.25,
-    vpW = (window.innerWidth/2) * screenPercentage,
-    vpH = (window.innerHeight/2) * screenPercentage,
-    gapFromLeft = rect.left,
-    gapFromRight =window.innerWidth - rect.right,
-    gapFromTop = rect.top,
-    gapFromBottom = window.innerHeight - rect.bottom,
-    boundsCheck = false;
-  if(axis === 'x' || axis === 'X'){
-    boundsCheck = (gapFromLeft < vpW && gapFromRight < vpW);
-  }else if(axis === 'y' || axis === 'Y'){
-    boundsCheck = (gapFromTop < vpH && gapFromBottom < vpH);
-  }else {
-    throw new Error('must define axis');
-  }
 
-  return boundsCheck;
+transform.getNewFocusPoint = function(zoomScale, clientX, clientY, img){
+  var
+      focusPoint = this.getFocusPoint(clientX, clientY, img)
+    , x_from_center = focusPoint.x - focusPoint.cX
+    , y_from_center = focusPoint.y - focusPoint.cY
+    , dist = Math.sqrt( Math.pow(x_from_center, 2) + Math.pow(y_from_center, 2))
+    , calcDistance = dist*((zoomScale))
+    , angle = Math.atan2((y_from_center), x_from_center)
+    , move = calcDistance
+    , newX = clientX + (Math.cos(angle) * move)
+    , newY = clientY + (Math.sin(angle) * move);
+  return {
+    x : newX,
+    y : newY,
+    distanceX : clientX-newX,
+    distanceY : clientY-newY
+  }
 };
 transform.getImageTransformMatrix = function(img, zoomScale, clientX, clientY){
   var transformStyle = window.getComputedStyle(img).transform;
@@ -98,49 +146,19 @@ transform.getImageTransformMatrix = function(img, zoomScale, clientX, clientY){
     transformStyle = window.getComputedStyle(img).transform;
   }
   var
-    focusPoint = this.getFocusPoint(clientX, clientY, img),
-    calcFocusPoint = this.getCalcFocusPoint(zoomScale, clientX,clientY, img),
-    //calcFocusPointTEST = this.getFocusPoint(clientX,clientY, img, zoomScale),
-    x_from_center = focusPoint.x - focusPoint.cX,
-    y_from_center = focusPoint.y - focusPoint.cY,
-    angle = Math.atan2((y_from_center), x_from_center),
-    length = Math.sqrt( Math.pow(x_from_center, 2) + Math.pow(y_from_center, 2)),
-    scaleFactor = Math.abs(zoomScale)+1,
-    newPoint ={
-      'x' : (scaleFactor * length * Math.cos(angle)) + calcFocusPoint.cX,
-      'y' : (scaleFactor * length * Math.sin(angle)) + calcFocusPoint.cY
-    },
-    maxZoom = 2.5,
-    minZoom = 1/3,
+    newPoint = this.getNewFocusPoint(zoomScale, clientX, clientY, img),
+    maxZoom = this.maxZoom,
+    minZoom = this.minZoom,
   //scale the image by delta
-    matrix = this.matrixArray(transformStyle),
-    transDirection = zoomScale >= 0 ? 1 : -1,
-    distanceX = (focusPoint.x - newPoint.x),
-    distanceY = (focusPoint.y - newPoint.y),
-    imgRect = img.getBoundingClientRect();
+    matrix = this.matrixArray(transformStyle);
+
   if(   ((matrix[0] + zoomScale) <= maxZoom )
     && ((matrix[0] + zoomScale) >= minZoom )){
-
     matrix[0] = matrix[0] + zoomScale;
     matrix[3] = matrix[3]  + zoomScale;
-
-    if(transDirection > 0){
-      //check if image is leaving the viewport
-      if(this.imageInBounds(imgRect, 'x')){
-        matrix[4] =  distanceX;
-      }
-      if(this.imageInBounds(imgRect, 'y')){
-        matrix[5] = distanceY;
-      }
-    }else{
-      if(matrix[0] <= 1){
-        matrix[4] = 0;
-        matrix[5] = 0;
-      }else{
-        matrix[4] = parseFloat(matrix[4])-(parseFloat(matrix[4])/6);
-        matrix[5] = parseFloat(matrix[5])-(parseFloat(matrix[5])/6);
-      }
-    }
+    var panDistance = this.zoomBounds(img, matrix, newPoint.distanceX, newPoint.distanceY);
+    matrix[4] = panDistance.x;
+    matrix[5] = panDistance.y;
   }else{
     matrix[0] = ((matrix[0] + zoomScale) >= maxZoom) ? maxZoom : minZoom;
     matrix[3] = ((matrix[0] + zoomScale) >= maxZoom) ? maxZoom : minZoom;
@@ -166,12 +184,10 @@ transform.yAxisBounds = function(image, y, distance, curY){
 transform.translateImage = function(el, oX, oY, nX, nY, initialMatrix){
   var
     image = el,
-    box = image.getBoundingClientRect(),
     distanceScale = 0.75,
     xDistance = (nX - oX)*distanceScale,
     yDistance = (nY - oY)*distanceScale,
     matrix = this.getElMatrix(el);
-
   matrix[4] =  initialMatrix[4] + xDistance;
   matrix[5] = this.yAxisBounds(image, initialMatrix[5], yDistance, matrix[5]);
   this.transformImage(image, matrix);

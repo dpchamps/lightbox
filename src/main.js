@@ -10,7 +10,7 @@ var lightbox = {
   bindEvents : require('./scripts/bindEvents'),
   controls : require('./modules/controls.js'),
   init : function(){
-
+    require('./modules/loadEvents.js')(this);
     touchme({ holdThreshold: 50,
       swipeThreshold: 200,
       swipePrecision: 250,
@@ -20,7 +20,6 @@ var lightbox = {
     this.controls = this.controls();
     var self = this;
     require('domready')(function(){
-      console.log("load", document.body);
       document.addEventListener('touchend', function(e){
         e.preventDefault();
       });
