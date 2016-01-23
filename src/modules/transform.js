@@ -3,8 +3,8 @@
 "use strict";
 
 var transform = {
-  maxZoom : 3.2,
-  minZoom : 1/2
+  maxZoom : 3.5,
+  minZoom : 0.8
 };
 transform.matrixArray = function(matrix){
   matrix = matrix.split("(")[1];
@@ -147,21 +147,16 @@ transform.getImageTransformMatrix = function(img, zoomScale, clientX, clientY){
   }
   var
     newPoint = this.getNewFocusPoint(zoomScale, clientX, clientY, img),
-    maxZoom = this.maxZoom,
-    minZoom = this.minZoom,
   //scale the image by delta
     matrix = this.matrixArray(transformStyle);
 
-  if(   ((matrix[0] + zoomScale) <= maxZoom )
-    && ((matrix[0] + zoomScale) >= minZoom )){
+  if(  ((matrix[0] + zoomScale) <= this.maxZoom )
+    && ((matrix[0] + zoomScale) >= this.minZoom )){
     matrix[0] = matrix[0] + zoomScale;
     matrix[3] = matrix[3]  + zoomScale;
     var panDistance = this.zoomBounds(img, matrix, newPoint.distanceX, newPoint.distanceY);
     matrix[4] = panDistance.x;
     matrix[5] = panDistance.y;
-  }else{
-    matrix[0] = ((matrix[0] + zoomScale) >= maxZoom) ? maxZoom : minZoom;
-    matrix[3] = ((matrix[0] + zoomScale) >= maxZoom) ? maxZoom : minZoom;
   }
   return matrix;
 };
@@ -224,10 +219,8 @@ transform.smoothTranslate = function(el, ms, x, y, precision){
           matrix[5] += Math.sin(angle) * velocity;
         }
         self.transformImage(el, matrix);
-        //console.log("working", matrix[4], x);
         if(xApproach && yApproach){
           clearInterval(moveInterval);
-          console.log("smooting complete");
         }
       }, ms);
 };
