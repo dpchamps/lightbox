@@ -157,7 +157,14 @@ transform.getImageTransformMatrix = function(img, zoomScale, clientX, clientY){
     var panDistance = this.zoomBounds(img, matrix, newPoint.distanceX, newPoint.distanceY);
     matrix[4] = panDistance.x;
     matrix[5] = panDistance.y;
+  }else if(matrix[0]+zoomScale >= this.maxZoom){
+    matrix[0] = this.maxZoom;
+    matrix[3] = this.maxZoom;
+  }else if(matrix[0]+ zoomScale <=this.minZoom){
+    matrix[0] = this.minZoom;
+    matrix[3] = this.minZoom;
   }
+
   return matrix;
 };
 transform.yAxisBounds = function(image, y, distance, curY){

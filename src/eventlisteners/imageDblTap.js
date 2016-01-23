@@ -6,17 +6,17 @@ var imageDbltap = function () {
 
     var
       img = e.target,
-      maxZoom = lightbox.transform.maxZoom,
       currentZoom = lightbox.transform.getXScale(img),
-      zoomScale = currentZoom / maxZoom,
+      targetZoom = (currentZoom <= 1.5) ? lightbox.transform.maxZoom : 1,
+      zoomScale = (targetZoom - currentZoom)*0.1,
       cX = e.x,
       cY = e.y;
-
     var interval = setInterval(function(){
       var matrix = lightbox.transform.getImageTransformMatrix(img, zoomScale, cX, cY);
       currentZoom = lightbox.transform.getXScale(img);
       lightbox.transform.transformImage(img, matrix);
-      if(currentZoom >= maxZoom){
+      console.log('in interval', currentZoom);
+      if(currentZoom === targetZoom || currentZoom+zoomScale >= lightbox.transform.maxZoom || currentZoom+zoomScale <= lightbox.transform.minZoom){
         clearInterval(interval);
       }
     }, 15);

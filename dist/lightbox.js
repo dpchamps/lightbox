@@ -467,17 +467,17 @@ var imageDbltap = function () {
 
     var
       img = e.target,
-      maxZoom = lightbox.transform.maxZoom,
       currentZoom = lightbox.transform.getXScale(img),
-      zoomScale = currentZoom / maxZoom,
+      targetZoom = (currentZoom <= 1.5) ? lightbox.transform.maxZoom : 1,
+      zoomScale = (targetZoom - currentZoom)*0.1,
       cX = e.x,
       cY = e.y;
-
     var interval = setInterval(function(){
       var matrix = lightbox.transform.getImageTransformMatrix(img, zoomScale, cX, cY);
       currentZoom = lightbox.transform.getXScale(img);
       lightbox.transform.transformImage(img, matrix);
-      if(currentZoom >= maxZoom){
+      console.log('in interval', currentZoom);
+      if(currentZoom === targetZoom || currentZoom+zoomScale >= lightbox.transform.maxZoom || currentZoom+zoomScale <= lightbox.transform.minZoom){
         clearInterval(interval);
       }
     }, 15);
@@ -1438,7 +1438,14 @@ transform.getImageTransformMatrix = function(img, zoomScale, clientX, clientY){
     var panDistance = this.zoomBounds(img, matrix, newPoint.distanceX, newPoint.distanceY);
     matrix[4] = panDistance.x;
     matrix[5] = panDistance.y;
+  }else if(matrix[0]+zoomScale >= this.maxZoom){
+    matrix[0] = this.maxZoom;
+    matrix[3] = this.maxZoom;
+  }else if(matrix[0]+ zoomScale <=this.minZoom){
+    matrix[0] = this.minZoom;
+    matrix[3] = this.minZoom;
   }
+
   return matrix;
 };
 transform.yAxisBounds = function(image, y, distance, curY){
