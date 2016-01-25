@@ -36,6 +36,6 @@ var lightbox = {
   }
 };
 
-window.lightbox = lightbox.init;
+window.lightbox = lightbox;
 
 

@@ -447,8 +447,6 @@ process.chdir = function (dir) {
 process.umask = function() { return 0; };
 
 },{}],15:[function(require,module,exports){
-/* globals */
-
 "use strict";
 var disableDefault = function () {
   this.events.add(function disableDefault(e){
@@ -583,17 +581,6 @@ module.exports = imagePinch;
 },{}],20:[function(require,module,exports){
 
 "use strict";
-var imagePinchRelease = function () {
-  this.events.add(function pinchReleaseListener(e){
-
-  });
-};
-
-module.exports = imagePinchRelease;
-
-},{}],21:[function(require,module,exports){
-
-"use strict";
 var imageScrollWheel = function () {
   var lightbox = this;
   lightbox.events.add(function scrollWheelListener(e){
@@ -610,7 +597,7 @@ var imageScrollWheel = function () {
 
 module.exports = imageScrollWheel;
 
-},{}],22:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 
 "use strict";
 var imageSwipe = function () {
@@ -669,17 +656,15 @@ var imageSwipe = function () {
           case 4:
             //down & right
             lightbox.transform.smoothTranslate(image, 5, matrix[4]+slideScaleX, matrix[5]+slideScaleY, 4);
-            break
         }
       }
     }
-
   });
 };
 
 module.exports = imageSwipe;
 
-},{}],23:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 "use strict";
 var stopTapProp = function () {
   this.events.add(function stopTapProp(e){
@@ -688,7 +673,7 @@ var stopTapProp = function () {
 };
 module.exports = stopTapProp;
 
-},{}],24:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 
 "use strict";
 var thumbTap = function () {
@@ -701,7 +686,8 @@ var thumbTap = function () {
 };
 module.exports = thumbTap;
 
-},{}],25:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
+/*globals touchme*/
 "use strict";
 require('./modules/polyfill-checks.js');
 var lightbox = {
@@ -713,14 +699,20 @@ var lightbox = {
   nav: require('./modules/nav.js'),
   bindEvents : require('./scripts/bindEvents'),
   controls : require('./modules/controls.js'),
-  init : function(){
+  init : function(touchOverride){
+    if(typeof window.touchme === 'undefined'){
+      throw new Error('Lightbox requires touchme.js as a dependency');
+    }
+    if(typeof touchOverride === 'undefined' || touchOverride === true){
+      touchme({ holdThreshold: 50,
+        swipeThreshold: 200,
+        swipePrecision: 250,
+        tapPrecision: 250,
+        tapThreshold: 250,
+        holdPrecision: 500});
+    }
+
     require('./modules/loadEvents.js')(this);
-    touchme({ holdThreshold: 50,
-      swipeThreshold: 200,
-      swipePrecision: 250,
-      tapPrecision: 250,
-      tapThreshold: 250,
-      holdPrecision: 500});
     this.controls = this.controls();
     var self = this;
     require('domready')(function(){
@@ -737,7 +729,7 @@ window.lightbox = lightbox;
 
 
 
-},{"./modules/animations.js":26,"./modules/controls.js":27,"./modules/events.js":28,"./modules/imgCache.js":29,"./modules/loadEvents.js":30,"./modules/nav.js":31,"./modules/polyfill-checks.js":32,"./modules/transform.js":33,"./modules/util.js":34,"./scripts/bindEvents":35,"domready":13}],26:[function(require,module,exports){
+},{"./modules/animations.js":25,"./modules/controls.js":26,"./modules/events.js":27,"./modules/imgCache.js":28,"./modules/loadEvents.js":29,"./modules/nav.js":30,"./modules/polyfill-checks.js":31,"./modules/transform.js":32,"./modules/util.js":33,"./scripts/bindEvents":34,"domready":13}],25:[function(require,module,exports){
 /*
 functions that move the image around the lightbox
 
@@ -812,7 +804,8 @@ var translate = function(image){
 
 module.exports = translate;
 
-},{}],27:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
+"use strict";
 var controls = function(){
   var
       modal = document.createElement('div')
@@ -839,13 +832,13 @@ var controls = function(){
     right: document.getElementsByClassName('lightbox-controls-right')[0],
     remove: document.getElementsByClassName('lightbox-controls-remove')[0],
     modal: document.getElementById('lightbox-modal')
-  }
+  };
 };
 
 module.exports = controls;
 
 
-},{}],28:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 /**
  * lightbox events / event  handlers
  *
@@ -1031,7 +1024,7 @@ events.clear = function(){
 
 module.exports = events;
 
-},{}],29:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 "use strict";
 var imgCache = function(){
 
@@ -1077,9 +1070,7 @@ var imgCache = function(){
 
 module.exports = imgCache();
 
-},{}],30:[function(require,module,exports){
-/* globals */
-
+},{}],29:[function(require,module,exports){
 "use strict";
 var loadEvents = function(context) {
   require('./../eventlisteners/disableDefault').call(context);
@@ -1087,7 +1078,6 @@ var loadEvents = function(context) {
   require('./../eventlisteners/imageHold').call(context);
   require('./../eventlisteners/imageHoldRelease').call(context);
   require('./../eventlisteners/imagePinch').call(context);
-  require('./../eventlisteners/imagePinchRelease').call(context);
   require('./../eventlisteners/imageScrollWheel').call(context);
   require('./../eventlisteners/imageSwipe').call(context);
   require('./../eventlisteners/stopTapProp').call(context);
@@ -1095,7 +1085,7 @@ var loadEvents = function(context) {
 
 module.exports = loadEvents;
 
-},{"./../eventlisteners/disableDefault":15,"./../eventlisteners/imageDblTap":16,"./../eventlisteners/imageHold":17,"./../eventlisteners/imageHoldRelease":18,"./../eventlisteners/imagePinch":19,"./../eventlisteners/imagePinchRelease":20,"./../eventlisteners/imageScrollWheel":21,"./../eventlisteners/imageSwipe":22,"./../eventlisteners/stopTapProp":23}],31:[function(require,module,exports){
+},{"./../eventlisteners/disableDefault":15,"./../eventlisteners/imageDblTap":16,"./../eventlisteners/imageHold":17,"./../eventlisteners/imageHoldRelease":18,"./../eventlisteners/imagePinch":19,"./../eventlisteners/imageScrollWheel":20,"./../eventlisteners/imageSwipe":21,"./../eventlisteners/stopTapProp":22}],30:[function(require,module,exports){
 
 
 "use strict";
@@ -1124,7 +1114,6 @@ var nav = function() {
     , holdreleaseListener = lightbox.events.get('holdreleaseListener')
     , disableDefault = lightbox.events.get('disableDefault')
     , scrollWheelListener = lightbox.events.get('scrollWheelListener')
-    , pinchReleaseListener = lightbox.events.get('pinchReleaseListener')
     , swipeListener = lightbox.events.get('swipeListener');
 
 
@@ -1176,7 +1165,6 @@ var nav = function() {
     el.addEventListener('pinch', pinchListener);
     el.addEventListener('holdrelease', holdreleaseListener);
     el.addEventListener('mousewheel', scrollWheelListener);
-    el.addEventListener('pinchrelease', pinchReleaseListener);
     el.addEventListener('swipe', swipeListener);
   }
   function removeTouchListeners(el){
@@ -1199,7 +1187,7 @@ var nav = function() {
       e.stopPropagation();
     }
     var
-        idx = parseInt(lightboxModal.dataset.idx)
+        idx = parseInt(lightboxModal.dataset.idx, 10)
       , curImg = lightboxModal.getElementsByTagName('img')[0]
       , nextImg = imageSet[idx+1]
       , newIdx = idx+1;
@@ -1221,7 +1209,7 @@ var nav = function() {
       e.stopPropagation();
     }
     var
-        idx = parseInt(lightboxModal.dataset.idx)
+        idx = parseInt(lightboxModal.dataset.idx, 10)
       , curImg = lightboxModal.getElementsByTagName('img')[0]
       , prevImg = imageSet[idx-1]
       , newIdx = idx-1;
@@ -1252,7 +1240,7 @@ var nav = function() {
 
 module.exports = nav;
 
-},{}],32:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 /*globals Modernizr*/
 /*
 The lightbox relies on serveral features that might not be widely supported.
@@ -1276,9 +1264,7 @@ module.exports = (function(){
 
 })();
 
-},{"browsernizr":1,"browsernizr/test/dom/classlist.js":11,"browsernizr/test/es6/promises.js":12,"classlist-polyfill":"classList","es6-promise":"promise"}],33:[function(require,module,exports){
-/* globals */
-
+},{"browsernizr":1,"browsernizr/test/dom/classlist.js":11,"browsernizr/test/es6/promises.js":12,"classlist-polyfill":"classList","es6-promise":"promise"}],32:[function(require,module,exports){
 "use strict";
 
 var transform = {
@@ -1313,21 +1299,17 @@ transform.getComputedRect = function(el){
   return {
     width:width,
     height:height
-  }
+  };
 };
 transform.getFocusPoint = function(clientX, clientY, img, zoomScale){
   if(typeof zoomScale === 'undefined'){
-    zoomScale = 0
+    zoomScale = 0;
   }
   var
     rect = img.getBoundingClientRect(),
-    calcScale = (zoomScale >= 0) ? zoomScale+1 : zoomScale -1,
-    viewportCX = window.innerWidth / 2,
-    viewPortCY = window.innerHeight / 2,
+    calcScale = (zoomScale >= 0) ? zoomScale+1 : zoomScale - 1,
     imgCX = (rect.width*calcScale)/2,
-    imgCY = (rect.height*calcScale)/2,
-    left = viewportCX - imgCX,
-    top = viewPortCY - imgCY;
+    imgCY = (rect.height*calcScale)/2;
   return {
     'x' : clientX,
     'y' : clientY,
@@ -1348,7 +1330,7 @@ transform.getCalcDistance = function(zoomScale, clientX, clientY, img){
   //console.log(rect.width);
 
 
-  return distance*zoomScale
+  return distance*zoomScale;
 };
 
 transform.cloneZoom = function (img, matrix, newX, newY){
@@ -1397,17 +1379,17 @@ transform.zoomBounds = function(img, matrix, xDist, yDist){
   return{
     x: newX,
     y: newY
-  }
+  };
 };
 
 transform.getNewFocusPoint = function(zoomScale, clientX, clientY, img){
   var
       focusPoint = this.getFocusPoint(clientX, clientY, img)
-    , x_from_center = focusPoint.x - focusPoint.cX
-    , y_from_center = focusPoint.y - focusPoint.cY
-    , dist = Math.sqrt( Math.pow(x_from_center, 2) + Math.pow(y_from_center, 2))
+    , xFromCenter = focusPoint.x - focusPoint.cX
+    , yFromCenter = focusPoint.y - focusPoint.cY
+    , dist = Math.sqrt( Math.pow(xFromCenter, 2) + Math.pow(yFromCenter, 2))
     , calcDistance = dist*((zoomScale))
-    , angle = Math.atan2((y_from_center), x_from_center)
+    , angle = Math.atan2((yFromCenter), xFromCenter)
     , move = calcDistance
     , newX = clientX + (Math.cos(angle) * move)
     , newY = clientY + (Math.sin(angle) * move);
@@ -1416,7 +1398,7 @@ transform.getNewFocusPoint = function(zoomScale, clientX, clientY, img){
     y : newY,
     distanceX : clientX-newX,
     distanceY : clientY-newY
-  }
+  };
 };
 transform.getImageTransformMatrix = function(img, zoomScale, clientX, clientY){
   var transformStyle = window.getComputedStyle(img).transform;
@@ -1512,7 +1494,7 @@ transform.smoothTranslate = function(el, ms, x, y, precision){
 };
 module.exports = transform;
 
-},{}],34:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 /**
  * utilities functions, top level selector, etc
  */
@@ -1579,9 +1561,7 @@ var util = function(sel){
 
 module.exports = util;
 
-},{}],35:[function(require,module,exports){
-/* globals */
-
+},{}],34:[function(require,module,exports){
 "use strict";
 var bindEvents = function () {
   if(this === 'undefined'){
@@ -1603,7 +1583,7 @@ var bindEvents = function () {
 
 module.exports = bindEvents;
 
-},{"./../eventlisteners/thumbTap":24}],"classList":[function(require,module,exports){
+},{"./../eventlisteners/thumbTap":23}],"classList":[function(require,module,exports){
 /*
  * classList.js: Cross-browser full element.classList implementation.
  * 2014-07-23
@@ -2815,4 +2795,4 @@ if ("document" in window.self) {
 
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":14}]},{},[25]);
+},{"_process":14}]},{},[24]);

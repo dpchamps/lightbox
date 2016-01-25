@@ -26,7 +26,6 @@ var nav = function() {
     , holdreleaseListener = lightbox.events.get('holdreleaseListener')
     , disableDefault = lightbox.events.get('disableDefault')
     , scrollWheelListener = lightbox.events.get('scrollWheelListener')
-    , pinchReleaseListener = lightbox.events.get('pinchReleaseListener')
     , swipeListener = lightbox.events.get('swipeListener');
 
 
@@ -78,7 +77,6 @@ var nav = function() {
     el.addEventListener('pinch', pinchListener);
     el.addEventListener('holdrelease', holdreleaseListener);
     el.addEventListener('mousewheel', scrollWheelListener);
-    el.addEventListener('pinchrelease', pinchReleaseListener);
     el.addEventListener('swipe', swipeListener);
   }
   function removeTouchListeners(el){
