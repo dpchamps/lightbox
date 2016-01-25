@@ -1,3 +1,4 @@
+"use strict";
 var controls = function(){
   var
       modal = document.createElement('div')
@@ -24,7 +25,7 @@ var controls = function(){
     right: document.getElementsByClassName('lightbox-controls-right')[0],
     remove: document.getElementsByClassName('lightbox-controls-remove')[0],
     modal: document.getElementById('lightbox-modal')
-  }
+  };
 };
 
 module.exports = controls;

@@ -1,5 +1,3 @@
-/* globals */
-
 "use strict";
 
 var transform = {
@@ -34,21 +32,17 @@ transform.getComputedRect = function(el){
   return {
     width:width,
     height:height
-  }
+  };
 };
 transform.getFocusPoint = function(clientX, clientY, img, zoomScale){
   if(typeof zoomScale === 'undefined'){
-    zoomScale = 0
+    zoomScale = 0;
   }
   var
     rect = img.getBoundingClientRect(),
-    calcScale = (zoomScale >= 0) ? zoomScale+1 : zoomScale -1,
-    viewportCX = window.innerWidth / 2,
-    viewPortCY = window.innerHeight / 2,
+    calcScale = (zoomScale >= 0) ? zoomScale+1 : zoomScale - 1,
     imgCX = (rect.width*calcScale)/2,
-    imgCY = (rect.height*calcScale)/2,
-    left = viewportCX - imgCX,
-    top = viewPortCY - imgCY;
+    imgCY = (rect.height*calcScale)/2;
   return {
     'x' : clientX,
     'y' : clientY,
@@ -69,7 +63,7 @@ transform.getCalcDistance = function(zoomScale, clientX, clientY, img){
   //console.log(rect.width);
 
 
-  return distance*zoomScale
+  return distance*zoomScale;
 };
 
 transform.cloneZoom = function (img, matrix, newX, newY){
@@ -118,17 +112,17 @@ transform.zoomBounds = function(img, matrix, xDist, yDist){
   return{
     x: newX,
     y: newY
-  }
+  };
 };
 
 transform.getNewFocusPoint = function(zoomScale, clientX, clientY, img){
   var
       focusPoint = this.getFocusPoint(clientX, clientY, img)
-    , x_from_center = focusPoint.x - focusPoint.cX
-    , y_from_center = focusPoint.y - focusPoint.cY
-    , dist = Math.sqrt( Math.pow(x_from_center, 2) + Math.pow(y_from_center, 2))
+    , xFromCenter = focusPoint.x - focusPoint.cX
+    , yFromCenter = focusPoint.y - focusPoint.cY
+    , dist = Math.sqrt( Math.pow(xFromCenter, 2) + Math.pow(yFromCenter, 2))
     , calcDistance = dist*((zoomScale))
-    , angle = Math.atan2((y_from_center), x_from_center)
+    , angle = Math.atan2((yFromCenter), xFromCenter)
     , move = calcDistance
     , newX = clientX + (Math.cos(angle) * move)
     , newY = clientY + (Math.sin(angle) * move);
@@ -137,7 +131,7 @@ transform.getNewFocusPoint = function(zoomScale, clientX, clientY, img){
     y : newY,
     distanceX : clientX-newX,
     distanceY : clientY-newY
-  }
+  };
 };
 transform.getImageTransformMatrix = function(img, zoomScale, clientX, clientY){
   var transformStyle = window.getComputedStyle(img).transform;

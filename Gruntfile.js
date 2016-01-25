@@ -46,7 +46,7 @@ module.exports = function(grunt) {
     },
 
     jshint: {
-      files: ['src/modules/*.js', 'src/*.js'],
+      files: ['src/**/*.js'],
       options: {
         globals: {
           console: true,
@@ -58,7 +58,7 @@ module.exports = function(grunt) {
     },
 
     watch: {
-      files: ['src/*.js', 'src/modules/*.js','src/scripts/*.js', 'src/style/*.scss', 'src/eventlisteners/*.js'],
+      files: ['src/**/*.js', 'src/style/**/*.scss'],
       tasks: ['browserify', 'jshint', 'qunit']
     },
 
@@ -81,6 +81,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-browserify');
   grunt.loadNpmTasks('grunt-sass');
 
+  grunt.registerTask('hint', 'jshint');
   grunt.registerTask('test', ['jshint', 'qunit']);
   grunt.registerTask('serve', ['build', 'watch']);
   grunt.registerTask('build', ['browserify','jshint', 'qunit', 'uglify', 'sass']);

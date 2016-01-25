@@ -101,7 +101,7 @@ var nav = function() {
       e.stopPropagation();
     }
     var
-        idx = parseInt(lightboxModal.dataset.idx)
+        idx = parseInt(lightboxModal.dataset.idx, 10)
       , curImg = lightboxModal.getElementsByTagName('img')[0]
       , nextImg = imageSet[idx+1]
       , newIdx = idx+1;
@@ -123,7 +123,7 @@ var nav = function() {
       e.stopPropagation();
     }
     var
-        idx = parseInt(lightboxModal.dataset.idx)
+        idx = parseInt(lightboxModal.dataset.idx, 10)
       , curImg = lightboxModal.getElementsByTagName('img')[0]
       , prevImg = imageSet[idx-1]
       , newIdx = idx-1;

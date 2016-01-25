@@ -56,11 +56,9 @@ var imageSwipe = function () {
           case 4:
             //down & right
             lightbox.transform.smoothTranslate(image, 5, matrix[4]+slideScaleX, matrix[5]+slideScaleY, 4);
-            break
         }
       }
     }
-
   });
 };
 

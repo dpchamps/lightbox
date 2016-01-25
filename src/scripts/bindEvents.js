@@ -1,5 +1,3 @@
-/* globals */
-
 "use strict";
 var bindEvents = function () {
   if(this === 'undefined'){

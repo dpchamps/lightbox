@@ -13,6 +13,7 @@
     "smarttabs": true,
     "browser" : true,
     "laxcomma" : true,
+    "laxbreak" : true,
     "globals"      : {
       "Promise"   : true
     }

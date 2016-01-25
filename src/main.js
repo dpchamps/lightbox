@@ -1,3 +1,4 @@
+/*globals touchme*/
 "use strict";
 require('./modules/polyfill-checks.js');
 var lightbox = {
@@ -9,14 +10,20 @@ var lightbox = {
   nav: require('./modules/nav.js'),
   bindEvents : require('./scripts/bindEvents'),
   controls : require('./modules/controls.js'),
-  init : function(){
+  init : function(touchOverride){
+    if(typeof window.touchme === 'undefined'){
+      throw new Error('Lightbox requires touchme.js as a dependency');
+    }
+    if(typeof touchOverride === 'undefined' || touchOverride === true){
+      touchme({ holdThreshold: 50,
+        swipeThreshold: 200,
+        swipePrecision: 250,
+        tapPrecision: 250,
+        tapThreshold: 250,
+        holdPrecision: 500});
+    }
+
     require('./modules/loadEvents.js')(this);
-    touchme({ holdThreshold: 50,
-      swipeThreshold: 200,
-      swipePrecision: 250,
-      tapPrecision: 250,
-      tapThreshold: 250,
-      holdPrecision: 500});
     this.controls = this.controls();
     var self = this;
     require('domready')(function(){
@@ -29,6 +36,6 @@ var lightbox = {
   }
 };
 
-window.lightbox = lightbox;
+window.lightbox = lightbox.init;
 
 
