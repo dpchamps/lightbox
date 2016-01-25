@@ -17,7 +17,6 @@ var imageHold = function () {
     img.addEventListener('touchmove', lightbox.events.get('translateTouchMove') );
   }
 
-
   lightbox.events.add(function holdListener(e){
     translateImageStart(e.target, e.x, e.y);
   });

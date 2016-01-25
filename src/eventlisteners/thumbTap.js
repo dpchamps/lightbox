@@ -1,22 +1,11 @@
 
 "use strict";
 var thumbTap = function () {
-  var nav = this.nav,
-      cache = this.imgCache;
+  var lightbox = this;
   this.events.add(function thumbTap(e){
     e.stopPropagation();
-    var
-      imageSet = nav.imageSet(),
-      img = this.getElementsByTagName('img')[0],
-      idx = img.dataset.idx,
-      src = imageSet[idx];
-    nav.enter();
-    cache.loadImage(src).then(function(image){
-      if(! cache.isComplete()){
-        cache.cacheImages(imageSet);
-      }
-      nav.addImage(idx, image);
-    });
+    var img = this.getElementsByTagName('img')[0];
+    lightbox.nav.enter(img);
   });
 };
 module.exports = thumbTap;

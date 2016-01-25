@@ -43,7 +43,16 @@ var nav = function() {
     el.removeEventListener('touchstart', disableDefault);
     el.removeEventListener('touchmove',disableDefault);
   }
-  function lightboxEnter(){
+  function lightboxEnter(img){
+    var
+        idx = img.dataset.idx
+      , src = imageSet[idx];
+    lightbox.imgCache.loadImage(src).then(function(image){
+      if(! cache.isComplete()){
+        cache.cacheImages(imageSet);
+      }
+      addImage(idx, image);
+    });
     lightboxModal.style.visibility = 'visible';
     document.body.style.overflow = 'hidden';
   }
@@ -51,8 +60,11 @@ var nav = function() {
     console.log(e.target);
     e.stopPropagation();
     var image = lightboxModal.getElementsByTagName('img')[0];
-    removeTouchListeners(image);
-    removeImage(image);
+    if(typeof image !== 'undefined'){
+      removeImage(image);
+      removeTouchListeners(image);
+    }
+    enableTouch(document);
     lightboxModal.style.visibility = 'hidden';
     document.body.style.overflow = 'auto';
   }
@@ -70,7 +82,6 @@ var nav = function() {
     el.addEventListener('swipe', swipeListener);
   }
   function removeTouchListeners(el){
-    enableTouch(document);
     el.removeEventListener('hold', holdListener);
     el.removeEventListener('pinch', pinchListener);
     el.removeEventListener('holdrelease', holdreleaseListener);
@@ -86,7 +97,9 @@ var nav = function() {
     lightboxModal.removeChild(image);
   }
   function nextImage(e){
-    e.stopPropagation();
+    if(typeof e !== 'undefined'){
+      e.stopPropagation();
+    }
     var
         idx = parseInt(lightboxModal.dataset.idx)
       , curImg = lightboxModal.getElementsByTagName('img')[0]
@@ -106,7 +119,9 @@ var nav = function() {
     });
   }
   function prevImage(e){
-    e.stopPropagation();
+    if(typeof e !== 'undefined'){
+      e.stopPropagation();
+    }
     var
         idx = parseInt(lightboxModal.dataset.idx)
       , curImg = lightboxModal.getElementsByTagName('img')[0]
@@ -116,7 +131,6 @@ var nav = function() {
       prevImg = imageSet[imageSet.last];
       newIdx = imageSet.last;
     }
-
     cache.loadImage(prevImg).then(function(image){
       var prev = image;
       lightbox.animate(curImg).slideRight().start().then(function(){

@@ -7,18 +7,17 @@ var imageHoldRelease = function () {
       el = e.target,
       box = el.getBoundingClientRect(),
       navTarget = window.innerWidth*0.7,
-      tapEvent = new Event('tap'),
       distance = Math.abs(e.originalX- e.lastX);
 
     if(box.right <= navTarget && distance > 150){
-      lightbox.controls.right.dispatchEvent(tapEvent);
+      lightbox.nav.next();
     }
     if(box.left >= navTarget/2 && distance > 150){
-      lightbox.controls.left.dispatchEvent(tapEvent);
+      lightbox.nav.prev();
     }
     if(box.width < window.innerWidth
       && box.height < window.innerHeight
-      && distance < 150){
+      && distance < navTarget){
       var matrix = lightbox.transform.getElMatrix(el),
         moveBy = matrix[4]/5,
         moveInterval = setInterval(function(){

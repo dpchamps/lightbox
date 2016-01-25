@@ -505,7 +505,6 @@ var imageHold = function () {
     img.addEventListener('touchmove', lightbox.events.get('translateTouchMove') );
   }
 
-
   lightbox.events.add(function holdListener(e){
     translateImageStart(e.target, e.x, e.y);
   });
@@ -523,18 +522,17 @@ var imageHoldRelease = function () {
       el = e.target,
       box = el.getBoundingClientRect(),
       navTarget = window.innerWidth*0.7,
-      tapEvent = new Event('tap'),
       distance = Math.abs(e.originalX- e.lastX);
 
     if(box.right <= navTarget && distance > 150){
-      lightbox.controls.right.dispatchEvent(tapEvent);
+      lightbox.nav.next();
     }
     if(box.left >= navTarget/2 && distance > 150){
-      lightbox.controls.left.dispatchEvent(tapEvent);
+      lightbox.nav.prev();
     }
     if(box.width < window.innerWidth
       && box.height < window.innerHeight
-      && distance < 150){
+      && distance < navTarget){
       var matrix = lightbox.transform.getElMatrix(el),
         moveBy = matrix[4]/5,
         moveInterval = setInterval(function(){
@@ -694,22 +692,11 @@ module.exports = stopTapProp;
 
 "use strict";
 var thumbTap = function () {
-  var nav = this.nav,
-      cache = this.imgCache;
+  var lightbox = this;
   this.events.add(function thumbTap(e){
     e.stopPropagation();
-    var
-      imageSet = nav.imageSet(),
-      img = this.getElementsByTagName('img')[0],
-      idx = img.dataset.idx,
-      src = imageSet[idx];
-    nav.enter();
-    cache.loadImage(src).then(function(image){
-      if(! cache.isComplete()){
-        cache.cacheImages(imageSet);
-      }
-      nav.addImage(idx, image);
-    });
+    var img = this.getElementsByTagName('img')[0];
+    lightbox.nav.enter(img);
   });
 };
 module.exports = thumbTap;
@@ -791,7 +778,6 @@ var translate = function(image){
   return{
     slideRight: function(){
       var idx;
-      console.log(image);
       stack(0, function(){
         image.classList.add('pictureSlideRight');
         idx = image.dataset.idx;
@@ -800,7 +786,6 @@ var translate = function(image){
         image.classList.remove('pictureSlideRight');
         image.classList.add('hidden');
         image.style.transform = 'translateX(0)';
-        //lightbox.navigate.prevImage(idx);
       });
       return this;
     },
@@ -1156,7 +1141,16 @@ var nav = function() {
     el.removeEventListener('touchstart', disableDefault);
     el.removeEventListener('touchmove',disableDefault);
   }
-  function lightboxEnter(){
+  function lightboxEnter(img){
+    var
+        idx = img.dataset.idx
+      , src = imageSet[idx];
+    lightbox.imgCache.loadImage(src).then(function(image){
+      if(! cache.isComplete()){
+        cache.cacheImages(imageSet);
+      }
+      addImage(idx, image);
+    });
     lightboxModal.style.visibility = 'visible';
     document.body.style.overflow = 'hidden';
   }
@@ -1164,8 +1158,11 @@ var nav = function() {
     console.log(e.target);
     e.stopPropagation();
     var image = lightboxModal.getElementsByTagName('img')[0];
-    removeTouchListeners(image);
-    removeImage(image);
+    if(typeof image !== 'undefined'){
+      removeImage(image);
+      removeTouchListeners(image);
+    }
+    enableTouch(document);
     lightboxModal.style.visibility = 'hidden';
     document.body.style.overflow = 'auto';
   }
@@ -1183,7 +1180,6 @@ var nav = function() {
     el.addEventListener('swipe', swipeListener);
   }
   function removeTouchListeners(el){
-    enableTouch(document);
     el.removeEventListener('hold', holdListener);
     el.removeEventListener('pinch', pinchListener);
     el.removeEventListener('holdrelease', holdreleaseListener);
@@ -1199,7 +1195,9 @@ var nav = function() {
     lightboxModal.removeChild(image);
   }
   function nextImage(e){
-    e.stopPropagation();
+    if(typeof e !== 'undefined'){
+      e.stopPropagation();
+    }
     var
         idx = parseInt(lightboxModal.dataset.idx)
       , curImg = lightboxModal.getElementsByTagName('img')[0]
@@ -1219,7 +1217,9 @@ var nav = function() {
     });
   }
   function prevImage(e){
-    e.stopPropagation();
+    if(typeof e !== 'undefined'){
+      e.stopPropagation();
+    }
     var
         idx = parseInt(lightboxModal.dataset.idx)
       , curImg = lightboxModal.getElementsByTagName('img')[0]
@@ -1229,7 +1229,6 @@ var nav = function() {
       prevImg = imageSet[imageSet.last];
       newIdx = imageSet.last;
     }
-
     cache.loadImage(prevImg).then(function(image){
       var prev = image;
       lightbox.animate(curImg).slideRight().start().then(function(){

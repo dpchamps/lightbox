@@ -38,7 +38,6 @@ var translate = function(image){
   return{
     slideRight: function(){
       var idx;
-      console.log(image);
       stack(0, function(){
         image.classList.add('pictureSlideRight');
         idx = image.dataset.idx;
@@ -47,7 +46,6 @@ var translate = function(image){
         image.classList.remove('pictureSlideRight');
         image.classList.add('hidden');
         image.style.transform = 'translateX(0)';
-        //lightbox.navigate.prevImage(idx);
       });
       return this;
     },
