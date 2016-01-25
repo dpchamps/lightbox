@@ -1,6 +1,6 @@
 @import "colors";
 @import "zindexscale";
-
+@import "devices";
 #lightbox-modal{
   position: fixed;
   top: 0;
@@ -58,5 +58,10 @@ $lightbox-control-height : 30px;
 }
 .hidden{
   visibility: hidden;
+}
+@media only screen and (max-width: $small-device){
+  .hidden-xs{
+    visibility: hidden;
+  }
 }
 
