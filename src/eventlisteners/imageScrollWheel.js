@@ -9,7 +9,7 @@ var imageScrollWheel = function () {
     if(delta < 0){
       zoomScale = zoomScale*-1;
     }
-    var matrix = lightbox.transform.getImageTransformMatrix(img, zoomScale, e.clientX, e.clientY);
+    var matrix = lightbox.transform.getImageTransformMatrix(img, zoomScale, e.offsetX, e.offsetY);
     lightbox.transform.transformImage(img, matrix);
   });
 };

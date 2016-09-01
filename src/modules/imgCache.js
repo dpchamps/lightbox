@@ -1,7 +1,12 @@
 "use strict";
 var imgCache = function(){
 
-  var _complete = false;
+  var hasCached = false,
+      isComplete,
+      processing = false,
+      promise = new Promise(function(res){
+        isComplete = res;
+      });
 
   function loadImage(src){
     return new Promise(function(resolve, reject){
@@ -19,7 +24,8 @@ var imgCache = function(){
 
   return {
     'cacheImages' : function(images){
-      _complete = false;
+      hasCached = false;
+      processing = true;
       var pArray = [];
       for(var idx in images){
           if(idx === 'last'){
@@ -29,11 +35,20 @@ var imgCache = function(){
       }
       Promise.all(pArray).then(function(){
         //the images have been cached
-        _complete = true;
+        isComplete();
+        hasCached = true;
+        processing = false;
       });
+      return promise;
     },
-    'isComplete' : function(){
-      return _complete;
+    'complete' : function(){
+      return promise;
+    },
+    'hasCached' : function(){
+      return hasCached;
+    },
+    'processing' : function(){
+      return processing;
     },
     'loadImage' : function(src){
       return loadImage(src);

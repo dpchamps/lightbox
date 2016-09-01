@@ -1,0 +1,18 @@
+@import 'zindexscale';
+$imageCycleOffset : 200%;
+
+#lightbox-modal img.current{
+  z-index : $zIndex-9;
+}
+
+#lightbox-modal img:not(.current){
+  z-index: $zIndex-8;
+}
+
+#lightbox-modal img.prev{
+  transform: translateX(-$imageCycleOffset) scale(0.6);
+}
+#lightbox-modal img.next{
+  transform: translateX($imageCycleOffset) scale(0.6);
+}
+

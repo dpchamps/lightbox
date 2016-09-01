@@ -11,7 +11,8 @@ var nav = function() {
     , thumbs = document.querySelectorAll('.thumb img')
     , imageSet = {last : 0}
     , cache = lightbox.imgCache
-    , lightboxModal = document.getElementById('lightbox-modal');
+    , lightboxModal = document.getElementById('lightbox-modal')
+    , imageCycle = false;
 
   for(var i = 0; i<thumbs.length; i++){
     var image = thumbs[i];
@@ -29,6 +30,11 @@ var nav = function() {
     , swipeListener = lightbox.events.get('swipeListener');
 
 
+  //initialize cache complete function
+  lightbox.imgCache.complete().then(function(){
+    console.log("cache complete");
+    lightbox.modal('spinner')[0].style.visibility = 'hidden';
+  });
   function disableDrag(el){
     el.addEventListener('dragstart', disableDefault);
     el.addEventListener('dragend', disableDefault);
@@ -47,10 +53,10 @@ var nav = function() {
         idx = img.dataset.idx
       , src = imageSet[idx];
     lightbox.imgCache.loadImage(src).then(function(image){
-      if(! cache.isComplete()){
-        cache.cacheImages(imageSet);
-      }
       addImage(idx, image);
+      if(!lightbox.imgCache.hasCached() && !lightbox.imgCache.processing()){
+        lightbox.imgCache.cacheImages(imageSet);
+      }
     });
     lightboxModal.style.visibility = 'visible';
     document.body.style.overflow = 'hidden';
@@ -58,11 +64,15 @@ var nav = function() {
   function lightboxExit(e){
     console.log(e.target);
     e.stopPropagation();
-    var image = lightboxModal.getElementsByTagName('img')[0];
-    if(typeof image !== 'undefined'){
-      removeImage(image);
-      removeTouchListeners(image);
+    var images = lightboxModal.getElementsByTagName('img');
+    images  = Array.prototype.slice.call( images );
+    for(var i = 0; i < images.length; i++){
+      if(typeof images[i] !== 'undefined'){
+        removeTouchListeners(images[i]);
+        removeImage(images[i]);
+      }
     }
+    imageCycle = false;
     enableTouch(document);
     lightboxModal.style.visibility = 'hidden';
     document.body.style.overflow = 'auto';
@@ -85,35 +95,116 @@ var nav = function() {
     el.removeEventListener('holdrelease', holdreleaseListener);
     el.removeEventListener('mousewheel', scrollWheelListener);
   }
-  function addImage(idx, image){
-    lightboxModal.dataset.idx = idx;
+  function currentImage(){
+    return lightboxModal.getElementsByClassName('current')[0];
+  }
+  function loadImageCycle(){
+    var
+        nextImage = getImage('next')
+      , prevImage = getImage('prev');
+
+    imageCycle = true;
+    cache.loadImage(nextImage.image).then(function(image){
+      addImage(nextImage.idx, image, 'next');
+    });
+    cache.loadImage(prevImage.image).then(function(image){
+      addImage(prevImage.idx, image, 'prev');
+    });
+
+  }
+  function hideImageCycle(){
+    imageCycle = false;
+    var images = [].slice.call(lightboxModal.getElementsByTagName('img'));
+    images.forEach(function(image){
+      if(image.classList.contains('current')){
+        return;
+      }
+      removeImage(image);
+    });
+  }
+  function reloadImageCycle(){
+    hideImageCycle();
+    loadImageCycle();
+  }
+  function addImage(idx, image, position){
+    if(typeof position === "undefined"){
+      position = 'current';
+    }
+    image.classList.add(position);
     lightboxModal.appendChild(image);
-    addTouchListeners(image);
-    lightboxModal.getElementsByTagName('img')[0].classList.remove('hidden');
+    if(position === 'current'){
+      lightboxModal.dataset.idx = idx;
+      addTouchListeners(image);
+      reloadImageCycle();
+    }
+    var DOMImage =  lightboxModal.getElementsByTagName('img')[0];
+    DOMImage.classList.remove('hidden');
   }
   function removeImage(image){
     lightboxModal.removeChild(image);
+  }
+  function getImage(position){
+    var
+      idx = parseInt(lightboxModal.dataset.idx, 10),
+      newIdx,nextImg,prevImg,
+      returnObj = {};
+    switch(position){
+      case 'next':
+        nextImg = imageSet[idx+1];
+        newIdx = idx+1;
+        if(typeof nextImg === 'undefined'){
+          nextImg = imageSet[1];
+          newIdx=1;
+        }
+        returnObj = {
+          image : nextImg,
+          idx : newIdx
+        };
+            break;
+      case 'prev':
+      case 'previous':
+        prevImg = imageSet[idx-1];
+        newIdx = idx-1;
+        if(typeof prevImg === 'undefined'){
+          prevImg = imageSet[imageSet.last];
+          newIdx = imageSet.last;
+        }
+        returnObj = {
+          image : prevImg,
+          idx : newIdx
+        };
+            break;
+      default :
+            throw new Error('position must be \'next\' \'prev\' or \'previous\'');
+    }
+
+    return returnObj;
   }
   function nextImage(e){
     if(typeof e !== 'undefined'){
       e.stopPropagation();
     }
     var
-        idx = parseInt(lightboxModal.dataset.idx, 10)
-      , curImg = lightboxModal.getElementsByTagName('img')[0]
-      , nextImg = imageSet[idx+1]
-      , newIdx = idx+1;
-    if(typeof nextImg === 'undefined'){
-      nextImg = imageSet[1];
-      newIdx=1;
-    }
+        next = getImage('next')
+      , curImg = lightboxModal.getElementsByClassName('current')[0]
+      , nextImg = next.image
+      , newIdx = next.idx;
 
     cache.loadImage(nextImg).then(function(image){
       var next = image;
       lightbox.animate(curImg).slideLeft().start().then(function(){
         removeImage(curImg);
-        addImage(newIdx, next);
+        if(!imageCycle){
+          addImage(newIdx, next);
+        }
       });
+      if(imageCycle){
+        removeImage(lightbox.modal('prev')[0]);
+        var nextImage = lightbox.modal('next')[0];
+        lightbox.animate(nextImage).center().start().then(function(){
+          addImage(newIdx, next);
+        });
+      }
     });
   }
   function prevImage(e){
@@ -121,32 +212,52 @@ var nav = function() {
       e.stopPropagation();
     }
     var
-        idx = parseInt(lightboxModal.dataset.idx, 10)
-      , curImg = lightboxModal.getElementsByTagName('img')[0]
-      , prevImg = imageSet[idx-1]
-      , newIdx = idx-1;
-    if(typeof prevImg === 'undefined'){
-      prevImg = imageSet[imageSet.last];
-      newIdx = imageSet.last;
-    }
-    cache.loadImage(prevImg).then(function(image){
+        prev = getImage('prev')
+      , curImg = lightboxModal.getElementsByClassName('current')[0]
+      , newIdx = prev.idx;
+
+    cache.loadImage(prev.image).then(function(image){
       var prev = image;
       lightbox.animate(curImg).slideRight().start().then(function(){
         removeImage(curImg);
-        addImage(newIdx, prev);
+        if(!imageCycle){
+          addImage(newIdx, prev);
+        }
       });
+      if(imageCycle){
+        removeImage(lightbox.modal('next')[0]);
+        var previousImage = lightbox.modal('prev')[0];
+        lightbox.animate(previousImage).center().start().then(function(){
+          addImage(newIdx, prev);
+        });
+      }
     });
   }
   return {
     addImage: addImage,
     removeImage: removeImage,
+    getImage: function(position){
+      return getImage(position);
+    },
+    addTouchListeners : function(image){
+      addTouchListeners(image);
+    },
+    removeTouchListeners : function(image){
+      removeTouchListeners(image);
+    },
     next : nextImage,
     prev : prevImage,
     exit : lightboxExit,
     enter : lightboxEnter,
     imageSet : function(){
       return imageSet;
-    }
+    },
+    currentImage : currentImage,
+    imageCycle : function(){
+      return imageCycle;
+    },
+    loadImageCycle : loadImageCycle,
+    hideImageCycle : hideImageCycle
   };
 };
 

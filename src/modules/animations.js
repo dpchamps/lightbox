@@ -59,7 +59,16 @@ var translate = function(image){
         image.classList.remove('pictureSlideLeft');
         image.classList.add('hidden');
         image.style.transform = 'translateX(0)';
-        //lightbox.navigate.nextImage(idx);
+      });
+      return this;
+    },
+    center: function(){
+      stack(0, function(){
+        image.style.transition = 'all 250ms';
+        image.style.transform = 'scale(1,1)';
+      });
+      stack(325, function(){
+
       });
       return this;
     },

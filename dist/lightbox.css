@@ -101,9 +101,18 @@ http://tobiasahlin.com/spinkit/
   top: 0;
   bottom: 0;
   left: 0;
-  right: 0;
-  z-index: 900; }
+  right: 0; }
 
+.hidden {
+  visibility: hidden; }
+
+@media only screen and (max-width: 768px) {
+  .hidden-xs {
+    visibility: hidden; } }
+
+/*
+Lightbox Controls
+*/
 .lightbox-controls {
   width: 100%;
   height: 100%;
@@ -136,12 +145,17 @@ http://tobiasahlin.com/spinkit/
   z-index: 1000;
   text-shadow: -1px 1px 1px black; }
 
-.hidden {
-  visibility: hidden; }
+#lightbox-modal img.current {
+  z-index: 900; }
 
-@media only screen and (max-width: 768px) {
-  .hidden-xs {
-    visibility: hidden; } }
+#lightbox-modal img:not(.current) {
+  z-index: 800; }
+
+#lightbox-modal img.prev {
+  transform: translateX(-200%) scale(0.6); }
+
+#lightbox-modal img.next {
+  transform: translateX(200%) scale(0.6); }
 
 .fadeIn {
   opacity: 1;

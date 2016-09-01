@@ -462,21 +462,31 @@ module.exports = disableDefault;
 var imageDbltap = function () {
   var lightbox = this;
   lightbox.events.add(function dbltapListener(e){
-
     var
       img = e.target,
       currentZoom = lightbox.transform.getXScale(img),
-      targetZoom = (currentZoom <= 1.5) ? lightbox.transform.maxZoom : 1,
-      zoomScale = (targetZoom - currentZoom)*0.1,
-      cX = e.x,
-      cY = e.y;
+      minZoomScale = lightbox.transform.getMinZoom(img),
+      targetZoom = (currentZoom > 1) ? 1 : minZoomScale,
+      zoomScale = (targetZoom - currentZoom)*0.5,
+      cX = img.getBoundingClientRect().width/2,
+      cY = img.getBoundingClientRect().height/2;
     var interval = setInterval(function(){
       var matrix = lightbox.transform.getImageTransformMatrix(img, zoomScale, cX, cY);
       currentZoom = lightbox.transform.getXScale(img);
-      lightbox.transform.transformImage(img, matrix);
-      if(currentZoom === targetZoom || currentZoom+zoomScale >= lightbox.transform.maxZoom || currentZoom+zoomScale <= lightbox.transform.minZoom){
+      if(matrix[0] > targetZoom){
+        matrix[0] = targetZoom;
+        matrix[3] = targetZoom;
+        matrix[4] = 0;
+        matrix[5] = 0;
+        lightbox.transform.transformImage(img, matrix);
+        clearInterval(interval);
+      }else if( currentZoom+zoomScale >= lightbox.transform.maxZoom ||
+        currentZoom+zoomScale <= lightbox.transform.minZoom){
         clearInterval(interval);
       }
+
+      lightbox.transform.transformImage(img, matrix);
+
     }, 15);
   });
 };
@@ -490,14 +500,33 @@ var imageHold = function () {
   var lightbox = this;
   function translateImageStart(img, x, y){
     var  initialMatrix =  lightbox.transform.getElMatrix(img);
+    if(lightbox.nav.imageCycle()){
+      var
+        next = lightbox.modal('next')[0]
+        , nextMatrix = lightbox.transform.getElMatrix(next)
+        , prev = lightbox.modal('prev')[0]
+        , prevMatrix = lightbox.transform.getElMatrix(prev);
+    }
     lightbox.events.add(function translateMouseMove(e){
       lightbox.transform.translateImage(img, x,y, e.x, e.y, initialMatrix);
+      if(nextMatrix){
+        lightbox.transform.translateImage(next, x,y, e.x, e.y, nextMatrix);
+      }
+      if(prevMatrix){
+        lightbox.transform.translateImage(prev, x,y, e.x, e.y, prevMatrix);
+      }
     });
     lightbox.events.add(function translateTouchMove(e){
       if(e.touches.length > 1){
         img.removeEventListener('touchmove', lightbox.events.get('translateTouchMove'));
       }
       lightbox.transform.translateImage(img, x, y, e.touches[0].clientX, e.touches[0].clientY, initialMatrix);
+      if(nextMatrix){
+        lightbox.transform.translateImage(next, x,y, e.touches[0].clientX, e.touches[0].clientY, nextMatrix);
+      }
+      if(prevMatrix){
+        lightbox.transform.translateImage(prev, x,y, e.touches[0].clientX, e.touches[0].clientY, prevMatrix);
+      }
     });
     img.addEventListener('mousemove', lightbox.events.get('translateMouseMove') );
     img.addEventListener('touchmove', lightbox.events.get('translateTouchMove') );
@@ -520,17 +549,28 @@ var imageHoldRelease = function () {
       el = e.target,
       box = el.getBoundingClientRect(),
       navTarget = window.innerWidth*0.7,
-      distance = Math.abs(e.originalX- e.lastX);
+      distance = Math.abs(e.originalX- e.lastX),
+      transitionFired = false;
+    if(lightbox.nav.imageCycle()){
+      var
+        next = lightbox.modal('next')[0]
+        , nextMatrix = lightbox.transform.getElMatrix(next)
+        , prev = lightbox.modal('prev')[0]
+        , prevMatrix = lightbox.transform.getElMatrix(prev);
+    }
 
     if(box.right <= navTarget && distance > 150){
       lightbox.nav.next();
+      transitionFired = true;
     }
     if(box.left >= navTarget/2 && distance > 150){
       lightbox.nav.prev();
+      transitionFired = true;
     }
     if(box.width < window.innerWidth
       && box.height < window.innerHeight
-      && distance < navTarget){
+      && distance < navTarget
+      && transitionFired === false){
       var matrix = lightbox.transform.getElMatrix(el),
         moveBy = matrix[4]/5,
         moveInterval = setInterval(function(){
@@ -542,6 +582,14 @@ var imageHoldRelease = function () {
             matrix[4] = 0;
           }
           lightbox.transform.transformImage(el, matrix);
+          if(nextMatrix){
+              nextMatrix[4] = nextMatrix[4]-moveBy;
+            lightbox.transform.transformImage(next, nextMatrix);
+          }
+          if(prevMatrix){
+            prevMatrix[4] = prevMatrix[4]-moveBy;
+            lightbox.transform.transformImage(prev, prevMatrix);
+          }
           if(Math.abs(matrix[4]) <= 0){
             clearInterval(moveInterval);
           }
@@ -564,7 +612,7 @@ var imagePinch = function () {
   lightbox.events.add(function pinchListener(e){
     var
       img = e.target,
-      zoomScale = (e.distance - e.initialPinch.distance)/250,
+      zoomScale = (e.distance - e.initialPinch.distance)/500,
       cX = e.midPoint.x,
       cY = e.midPoint.y,
       oX = e.initialPinch.midPoint.x,
@@ -590,7 +638,7 @@ var imageScrollWheel = function () {
     if(delta < 0){
       zoomScale = zoomScale*-1;
     }
-    var matrix = lightbox.transform.getImageTransformMatrix(img, zoomScale, e.clientX, e.clientY);
+    var matrix = lightbox.transform.getImageTransformMatrix(img, zoomScale, e.offsetX, e.offsetY);
     lightbox.transform.transformImage(img, matrix);
   });
 };
@@ -699,6 +747,7 @@ var lightbox = {
   nav: require('./modules/nav.js'),
   bindEvents : require('./scripts/bindEvents'),
   controls : require('./modules/controls.js'),
+  modal : require('./modules/lightboxModal'),
   init : function(touchOverride){
     if(typeof window.touchme === 'undefined'){
       throw new Error('Lightbox requires touchme.js as a dependency');
@@ -729,7 +778,7 @@ window.lightbox = lightbox;
 
 
 
-},{"./modules/animations.js":25,"./modules/controls.js":26,"./modules/events.js":27,"./modules/imgCache.js":28,"./modules/loadEvents.js":29,"./modules/nav.js":30,"./modules/polyfill-checks.js":31,"./modules/transform.js":32,"./modules/util.js":33,"./scripts/bindEvents":34,"domready":13}],25:[function(require,module,exports){
+},{"./modules/animations.js":25,"./modules/controls.js":26,"./modules/events.js":27,"./modules/imgCache.js":28,"./modules/lightboxModal":29,"./modules/loadEvents.js":30,"./modules/nav.js":31,"./modules/polyfill-checks.js":32,"./modules/transform.js":33,"./modules/util.js":34,"./scripts/bindEvents":35,"domready":13}],25:[function(require,module,exports){
 /*
 functions that move the image around the lightbox
 
@@ -791,7 +840,16 @@ var translate = function(image){
         image.classList.remove('pictureSlideLeft');
         image.classList.add('hidden');
         image.style.transform = 'translateX(0)';
-        //lightbox.navigate.nextImage(idx);
+      });
+      return this;
+    },
+    center: function(){
+      stack(0, function(){
+        image.style.transition = 'all 250ms';
+        image.style.transform = 'scale(1,1)';
+      });
+      stack(325, function(){
+
       });
       return this;
     },
@@ -1028,7 +1086,12 @@ module.exports = events;
 "use strict";
 var imgCache = function(){
 
-  var _complete = false;
+  var hasCached = false,
+      isComplete,
+      processing = false,
+      promise = new Promise(function(res){
+        isComplete = res;
+      });
 
   function loadImage(src){
     return new Promise(function(resolve, reject){
@@ -1046,7 +1109,8 @@ var imgCache = function(){
 
   return {
     'cacheImages' : function(images){
-      _complete = false;
+      hasCached = false;
+      processing = true;
       var pArray = [];
       for(var idx in images){
           if(idx === 'last'){
@@ -1056,11 +1120,20 @@ var imgCache = function(){
       }
       Promise.all(pArray).then(function(){
         //the images have been cached
-        _complete = true;
+        isComplete();
+        hasCached = true;
+        processing = false;
       });
+      return promise;
     },
-    'isComplete' : function(){
-      return _complete;
+    'complete' : function(){
+      return promise;
+    },
+    'hasCached' : function(){
+      return hasCached;
+    },
+    'processing' : function(){
+      return processing;
     },
     'loadImage' : function(src){
       return loadImage(src);
@@ -1071,6 +1144,37 @@ var imgCache = function(){
 module.exports = imgCache();
 
 },{}],29:[function(require,module,exports){
+
+"use strict";
+var lightboxModal = function (needle, findType) {
+  if(typeof findType === 'undefined'){
+    findType = 'class';
+  }
+  var modal = document.getElementById('lightbox-modal');
+  if(typeof needle === 'undefined'){
+    return modal;
+  }else{
+    var term;
+    switch(findType){
+      case 'class':
+            term = modal.getElementsByClassName(needle);
+            break;
+      case 'tag':
+            term = modal.getElementsByTagName(needle);
+            break;
+      case 'id':
+            term = modal.getElementById(needle);
+            break;
+      default :
+            throw new Error('Unknown query type:', findType);
+    }
+    return term;
+  }
+};
+
+module.exports = lightboxModal;
+
+},{}],30:[function(require,module,exports){
 "use strict";
 var loadEvents = function(context) {
   require('./../eventlisteners/disableDefault').call(context);
@@ -1085,7 +1189,7 @@ var loadEvents = function(context) {
 
 module.exports = loadEvents;
 
-},{"./../eventlisteners/disableDefault":15,"./../eventlisteners/imageDblTap":16,"./../eventlisteners/imageHold":17,"./../eventlisteners/imageHoldRelease":18,"./../eventlisteners/imagePinch":19,"./../eventlisteners/imageScrollWheel":20,"./../eventlisteners/imageSwipe":21,"./../eventlisteners/stopTapProp":22}],30:[function(require,module,exports){
+},{"./../eventlisteners/disableDefault":15,"./../eventlisteners/imageDblTap":16,"./../eventlisteners/imageHold":17,"./../eventlisteners/imageHoldRelease":18,"./../eventlisteners/imagePinch":19,"./../eventlisteners/imageScrollWheel":20,"./../eventlisteners/imageSwipe":21,"./../eventlisteners/stopTapProp":22}],31:[function(require,module,exports){
 
 
 "use strict";
@@ -1099,7 +1203,8 @@ var nav = function() {
     , thumbs = document.querySelectorAll('.thumb img')
     , imageSet = {last : 0}
     , cache = lightbox.imgCache
-    , lightboxModal = document.getElementById('lightbox-modal');
+    , lightboxModal = document.getElementById('lightbox-modal')
+    , imageCycle = false;
 
   for(var i = 0; i<thumbs.length; i++){
     var image = thumbs[i];
@@ -1117,6 +1222,11 @@ var nav = function() {
     , swipeListener = lightbox.events.get('swipeListener');
 
 
+  //initialize cache complete function
+  lightbox.imgCache.complete().then(function(){
+    console.log("cache complete");
+    lightbox.modal('spinner')[0].style.visibility = 'hidden';
+  });
   function disableDrag(el){
     el.addEventListener('dragstart', disableDefault);
     el.addEventListener('dragend', disableDefault);
@@ -1135,10 +1245,10 @@ var nav = function() {
         idx = img.dataset.idx
       , src = imageSet[idx];
     lightbox.imgCache.loadImage(src).then(function(image){
-      if(! cache.isComplete()){
-        cache.cacheImages(imageSet);
-      }
       addImage(idx, image);
+      if(!lightbox.imgCache.hasCached() && !lightbox.imgCache.processing()){
+        lightbox.imgCache.cacheImages(imageSet);
+      }
     });
     lightboxModal.style.visibility = 'visible';
     document.body.style.overflow = 'hidden';
@@ -1146,11 +1256,15 @@ var nav = function() {
   function lightboxExit(e){
     console.log(e.target);
     e.stopPropagation();
-    var image = lightboxModal.getElementsByTagName('img')[0];
-    if(typeof image !== 'undefined'){
-      removeImage(image);
-      removeTouchListeners(image);
+    var images = lightboxModal.getElementsByTagName('img');
+    images  = Array.prototype.slice.call( images );
+    for(var i = 0; i < images.length; i++){
+      if(typeof images[i] !== 'undefined'){
+        removeTouchListeners(images[i]);
+        removeImage(images[i]);
+      }
     }
+    imageCycle = false;
     enableTouch(document);
     lightboxModal.style.visibility = 'hidden';
     document.body.style.overflow = 'auto';
@@ -1173,35 +1287,116 @@ var nav = function() {
     el.removeEventListener('holdrelease', holdreleaseListener);
     el.removeEventListener('mousewheel', scrollWheelListener);
   }
-  function addImage(idx, image){
-    lightboxModal.dataset.idx = idx;
+  function currentImage(){
+    return lightboxModal.getElementsByClassName('current')[0];
+  }
+  function loadImageCycle(){
+    var
+        nextImage = getImage('next')
+      , prevImage = getImage('prev');
+
+    imageCycle = true;
+    cache.loadImage(nextImage.image).then(function(image){
+      addImage(nextImage.idx, image, 'next');
+    });
+    cache.loadImage(prevImage.image).then(function(image){
+      addImage(prevImage.idx, image, 'prev');
+    });
+
+  }
+  function hideImageCycle(){
+    imageCycle = false;
+    var images = [].slice.call(lightboxModal.getElementsByTagName('img'));
+    images.forEach(function(image){
+      if(image.classList.contains('current')){
+        return;
+      }
+      removeImage(image);
+    });
+  }
+  function reloadImageCycle(){
+    hideImageCycle();
+    loadImageCycle();
+  }
+  function addImage(idx, image, position){
+    if(typeof position === "undefined"){
+      position = 'current';
+    }
+    image.classList.add(position);
     lightboxModal.appendChild(image);
-    addTouchListeners(image);
-    lightboxModal.getElementsByTagName('img')[0].classList.remove('hidden');
+    if(position === 'current'){
+      lightboxModal.dataset.idx = idx;
+      addTouchListeners(image);
+      reloadImageCycle();
+    }
+    var DOMImage =  lightboxModal.getElementsByTagName('img')[0];
+    DOMImage.classList.remove('hidden');
   }
   function removeImage(image){
     lightboxModal.removeChild(image);
+  }
+  function getImage(position){
+    var
+      idx = parseInt(lightboxModal.dataset.idx, 10),
+      newIdx,nextImg,prevImg,
+      returnObj = {};
+    switch(position){
+      case 'next':
+        nextImg = imageSet[idx+1];
+        newIdx = idx+1;
+        if(typeof nextImg === 'undefined'){
+          nextImg = imageSet[1];
+          newIdx=1;
+        }
+        returnObj = {
+          image : nextImg,
+          idx : newIdx
+        };
+            break;
+      case 'prev':
+      case 'previous':
+        prevImg = imageSet[idx-1];
+        newIdx = idx-1;
+        if(typeof prevImg === 'undefined'){
+          prevImg = imageSet[imageSet.last];
+          newIdx = imageSet.last;
+        }
+        returnObj = {
+          image : prevImg,
+          idx : newIdx
+        };
+            break;
+      default :
+            throw new Error('position must be \'next\' \'prev\' or \'previous\'');
+    }
+
+    return returnObj;
   }
   function nextImage(e){
     if(typeof e !== 'undefined'){
       e.stopPropagation();
     }
     var
-        idx = parseInt(lightboxModal.dataset.idx, 10)
-      , curImg = lightboxModal.getElementsByTagName('img')[0]
-      , nextImg = imageSet[idx+1]
-      , newIdx = idx+1;
-    if(typeof nextImg === 'undefined'){
-      nextImg = imageSet[1];
-      newIdx=1;
-    }
+        next = getImage('next')
+      , curImg = lightboxModal.getElementsByClassName('current')[0]
+      , nextImg = next.image
+      , newIdx = next.idx;
 
     cache.loadImage(nextImg).then(function(image){
       var next = image;
       lightbox.animate(curImg).slideLeft().start().then(function(){
         removeImage(curImg);
-        addImage(newIdx, next);
+        if(!imageCycle){
+          addImage(newIdx, next);
+        }
       });
+      if(imageCycle){
+        removeImage(lightbox.modal('prev')[0]);
+        var nextImage = lightbox.modal('next')[0];
+        lightbox.animate(nextImage).center().start().then(function(){
+          addImage(newIdx, next);
+        });
+      }
     });
   }
   function prevImage(e){
@@ -1209,38 +1404,58 @@ var nav = function() {
       e.stopPropagation();
     }
     var
-        idx = parseInt(lightboxModal.dataset.idx, 10)
-      , curImg = lightboxModal.getElementsByTagName('img')[0]
-      , prevImg = imageSet[idx-1]
-      , newIdx = idx-1;
-    if(typeof prevImg === 'undefined'){
-      prevImg = imageSet[imageSet.last];
-      newIdx = imageSet.last;
-    }
-    cache.loadImage(prevImg).then(function(image){
+        prev = getImage('prev')
+      , curImg = lightboxModal.getElementsByClassName('current')[0]
+      , newIdx = prev.idx;
+
+    cache.loadImage(prev.image).then(function(image){
       var prev = image;
       lightbox.animate(curImg).slideRight().start().then(function(){
         removeImage(curImg);
-        addImage(newIdx, prev);
+        if(!imageCycle){
+          addImage(newIdx, prev);
+        }
       });
+      if(imageCycle){
+        removeImage(lightbox.modal('next')[0]);
+        var previousImage = lightbox.modal('prev')[0];
+        lightbox.animate(previousImage).center().start().then(function(){
+          addImage(newIdx, prev);
+        });
+      }
     });
   }
   return {
     addImage: addImage,
     removeImage: removeImage,
+    getImage: function(position){
+      return getImage(position);
+    },
+    addTouchListeners : function(image){
+      addTouchListeners(image);
+    },
+    removeTouchListeners : function(image){
+      removeTouchListeners(image);
+    },
     next : nextImage,
     prev : prevImage,
     exit : lightboxExit,
     enter : lightboxEnter,
     imageSet : function(){
       return imageSet;
-    }
+    },
+    currentImage : currentImage,
+    imageCycle : function(){
+      return imageCycle;
+    },
+    loadImageCycle : loadImageCycle,
+    hideImageCycle : hideImageCycle
   };
 };
 
 module.exports = nav;
 
-},{}],31:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 /*globals Modernizr*/
 /*
 The lightbox relies on serveral features that might not be widely supported.
@@ -1264,12 +1479,15 @@ module.exports = (function(){
 
 })();
 
-},{"browsernizr":1,"browsernizr/test/dom/classlist.js":11,"browsernizr/test/es6/promises.js":12,"classlist-polyfill":"classList","es6-promise":"promise"}],32:[function(require,module,exports){
+},{"browsernizr":1,"browsernizr/test/dom/classlist.js":11,"browsernizr/test/es6/promises.js":12,"classlist-polyfill":"classList","es6-promise":"promise"}],33:[function(require,module,exports){
 "use strict";
 
 var transform = {
-  maxZoom : 3.5,
-  minZoom : 0.8
+  maxZoom : 3.3,
+  minZoom : 0.9
+};
+transform.round = function(val, decimals){
+  return Number( Math.round(val+'e'+decimals)+'e-'+decimals );
 };
 transform.matrixArray = function(matrix){
   matrix = matrix.split("(")[1];
@@ -1285,7 +1503,7 @@ transform.getElMatrix = function(el){
   return this.matrixArray(window.getComputedStyle(el).transform);
 };
 transform.getXScale = function(img){
-  return this.getElMatrix(img)[0];
+  return this.round(this.getElMatrix(img)[0], 2);
 
 };
 transform.transformImage = function(img, matrix){
@@ -1301,22 +1519,7 @@ transform.getComputedRect = function(el){
     height:height
   };
 };
-transform.getFocusPoint = function(clientX, clientY, img, zoomScale){
-  if(typeof zoomScale === 'undefined'){
-    zoomScale = 0;
-  }
-  var
-    rect = img.getBoundingClientRect(),
-    calcScale = (zoomScale >= 0) ? zoomScale+1 : zoomScale - 1,
-    imgCX = (rect.width*calcScale)/2,
-    imgCY = (rect.height*calcScale)/2;
-  return {
-    'x' : clientX,
-    'y' : clientY,
-    'cX': imgCX+rect.left,
-    'cY': imgCY+rect.top
-  };
-};
+
 transform.getCalcDistance = function(zoomScale, clientX, clientY, img){
   var
       rect = img.getBoundingClientRect()
@@ -1325,10 +1528,6 @@ transform.getCalcDistance = function(zoomScale, clientX, clientY, img){
     , xFromCenter = Math.abs(clientX - cX)
     , yFromCenter = Math.abs(clientY - cY)
     , distance = Math.sqrt( (yFromCenter*yFromCenter) + (xFromCenter*xFromCenter) );
-
-  //console.log(distance*zoomScale);
-  //console.log(rect.width);
-
 
   return distance*zoomScale;
 };
@@ -1345,6 +1544,7 @@ transform.cloneZoom = function (img, matrix, newX, newY){
   return clone;
 };
 transform.zoomBounds = function(img, matrix, xDist, yDist){
+
   var clone = this.cloneZoom(img, matrix, xDist, yDist);
   img.parentNode.appendChild(clone);
   var rect = clone.getBoundingClientRect(),
@@ -1352,7 +1552,6 @@ transform.zoomBounds = function(img, matrix, xDist, yDist){
       oldX = matrix[4], oldY = matrix[5],
       bottom = window.innerHeight-rect.bottom,
       right = window.innerWidth-rect.right;
-  //moving the y-axis
   if(rect.height > window.innerHeight){
     if(rect.top > 0){
       newY = oldY+(yDist-rect.top);
@@ -1381,18 +1580,49 @@ transform.zoomBounds = function(img, matrix, xDist, yDist){
     y: newY
   };
 };
+transform.getMinZoom = function(img){
+  var imgRect = img.getBoundingClientRect(),
+      max = Math.max(imgRect.width, imgRect.height),
+      scalePoint,
+      nextClick = 0.25;
 
+  if(max === imgRect.height){
+    scalePoint = window.innerHeight / max;
+  }else if(max === imgRect.width){
+    scalePoint = window.innerWidth / max;
+  }
+
+  return this.round(scalePoint+nextClick, 2);
+};
+transform.getFocusPoint = function(clientX, clientY, img, zoomScale){
+  if(typeof zoomScale === 'undefined'){
+    zoomScale = 0;
+  }
+  var
+    rect = img.getBoundingClientRect(),
+    calcScale = (zoomScale >= 0) ? zoomScale+1 : zoomScale - 1,
+    imgCX = (rect.width*calcScale)/2,
+    imgCY = (rect.height*calcScale)/2;
+  return {
+    'x' : clientX,
+    'y' : clientY,
+    'cX': imgCX+rect.left,
+    'cY': imgCY+rect.top
+  };
+};
 transform.getNewFocusPoint = function(zoomScale, clientX, clientY, img){
   var
       focusPoint = this.getFocusPoint(clientX, clientY, img)
     , xFromCenter = focusPoint.x - focusPoint.cX
     , yFromCenter = focusPoint.y - focusPoint.cY
     , dist = Math.sqrt( Math.pow(xFromCenter, 2) + Math.pow(yFromCenter, 2))
-    , calcDistance = dist*((zoomScale))
+    , calcDistance = dist*zoomScale
     , angle = Math.atan2((yFromCenter), xFromCenter)
-    , move = calcDistance
-    , newX = clientX + (Math.cos(angle) * move)
-    , newY = clientY + (Math.sin(angle) * move);
+    , move = calcDistance;
+  var
+      newX = focusPoint.x + (Math.cos(angle) * move)
+    , newY = focusPoint.y + (Math.sin(angle) * move);
+
   return {
     x : newX,
     y : newY,
@@ -1407,10 +1637,8 @@ transform.getImageTransformMatrix = function(img, zoomScale, clientX, clientY){
     transformStyle = window.getComputedStyle(img).transform;
   }
   var
-    newPoint = this.getNewFocusPoint(zoomScale, clientX, clientY, img),
-  //scale the image by delta
-    matrix = this.matrixArray(transformStyle);
-
+    matrix = this.matrixArray(transformStyle),
+    newPoint = this.getNewFocusPoint(zoomScale, clientX, clientY, img);
   if(  ((matrix[0] + zoomScale) <= this.maxZoom )
     && ((matrix[0] + zoomScale) >= this.minZoom )){
     matrix[0] = matrix[0] + zoomScale;
@@ -1494,7 +1722,7 @@ transform.smoothTranslate = function(el, ms, x, y, precision){
 };
 module.exports = transform;
 
-},{}],33:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 /**
  * utilities functions, top level selector, etc
  */
@@ -1561,7 +1789,7 @@ var util = function(sel){
 
 module.exports = util;
 
-},{}],34:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 "use strict";
 var bindEvents = function () {
   if(this === 'undefined'){

@@ -10,6 +10,7 @@ var lightbox = {
   nav: require('./modules/nav.js'),
   bindEvents : require('./scripts/bindEvents'),
   controls : require('./modules/controls.js'),
+  modal : require('./modules/lightboxModal'),
   init : function(touchOverride){
     if(typeof window.touchme === 'undefined'){
       throw new Error('Lightbox requires touchme.js as a dependency');

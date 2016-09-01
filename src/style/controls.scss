@@ -1,0 +1,39 @@
+/*
+Lightbox Controls
+*/
+@import "zindexscale";
+
+$lightbox-control-height : 30px;
+.lightbox-controls{
+  width:100%;
+  height:100%;
+  font-size: $lightbox-control-height;
+}
+
+.lightbox-controls .glyphicon{
+  position: absolute;
+  color: $white;
+  text-shadow: 1px 1px 1px darken($black, 100%);
+  height: $lightbox-control-height;
+  cursor: pointer;
+}
+.lightbox-controls .glyphicon-remove{
+  top: $lightbox-control-height/2;
+  right:$lightbox-control-height;
+  z-index: $zIndex-10;
+
+}
+.lightbox-controls .glyphicon-chevron-left{
+  top: 0; bottom:0;
+  margin: auto 0;
+  left: $lightbox-control-height;
+  z-index: $zIndex-10;
+
+}
+.lightbox-controls .glyphicon-chevron-right{
+  top: 0; bottom:0;
+  margin: auto 0;
+  right: $lightbox-control-height;
+  z-index: $zIndex-10;
+  text-shadow: -1px 1px 1px darken($black, 100%);
+}

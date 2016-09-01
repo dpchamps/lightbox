@@ -59,7 +59,7 @@ module.exports = function(grunt) {
 
     watch: {
       files: ['src/**/*.js', 'src/style/**/*.scss'],
-      tasks: ['browserify', 'jshint', 'qunit']
+      tasks: ['build']
     },
 
     browserify: {
@@ -84,5 +84,5 @@ module.exports = function(grunt) {
   grunt.registerTask('hint', 'jshint');
   grunt.registerTask('test', ['jshint', 'qunit']);
   grunt.registerTask('serve', ['build', 'watch']);
-  grunt.registerTask('build', ['browserify','jshint', 'qunit', 'uglify', 'sass']);
+  grunt.registerTask('build', ['browserify','jshint', 'uglify', 'sass']);
 };
