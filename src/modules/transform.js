@@ -56,7 +56,7 @@ transform.cloneZoom = function (img, matrix, newX, newY){
 
   newMatrix[4] = newMatrix[4]+newX;
   newMatrix[5] = newMatrix[5]+newY;
-  clone.classList.add('hidden');
+  clone.classList.add('clone-hidden');
   this.transformImage(clone, newMatrix);
 
   return clone;
@@ -92,6 +92,7 @@ transform.zoomBounds = function(img, matrix, xDist, yDist){
   }else{
     newX = 0;
   }
+
   img.parentNode.removeChild(clone);
   return{
     x: newX,

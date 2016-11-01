@@ -1,5 +1,5 @@
 "use strict";
-var bindEvents = function () {
+var bindEvents = function (thumbClass) {
   if(this === 'undefined'){
     throw new Error();
   }
@@ -9,7 +9,7 @@ var bindEvents = function () {
     , thumbTap = lightbox.events.get('thumbTap');
 
 
-  lightbox.util('.thumb').addEvents('tap', thumbTap);
+  lightbox.util(thumbClass).addEvents('tap', thumbTap);
 
   lightbox.controls.left.addEventListener('tap', lightbox.nav.prev);
   lightbox.controls.right.addEventListener('tap', lightbox.nav.next);

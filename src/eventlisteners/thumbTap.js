@@ -5,6 +5,7 @@ var thumbTap = function () {
   this.events.add(function thumbTap(e){
     e.stopPropagation();
     var img = this.getElementsByTagName('img')[0];
+    console.log(img);
     lightbox.nav.enter(img);
   });
 };

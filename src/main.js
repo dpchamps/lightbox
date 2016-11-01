@@ -11,19 +11,20 @@ var lightbox = {
   bindEvents : require('./scripts/bindEvents'),
   controls : require('./modules/controls.js'),
   modal : require('./modules/lightboxModal'),
-  init : function(touchOverride){
+  init : function(thumbClass){
     if(typeof window.touchme === 'undefined'){
       throw new Error('Lightbox requires touchme.js as a dependency');
     }
-    if(typeof touchOverride === 'undefined' || touchOverride === true){
-      touchme({ holdThreshold: 50,
-        swipeThreshold: 200,
-        swipePrecision: 250,
-        tapPrecision: 250,
-        tapThreshold: 250,
-        holdPrecision: 500});
-    }
 
+    touchme({ holdThreshold: 50,
+      swipeThreshold: 200,
+      swipePrecision: 250,
+      tapPrecision: 250,
+      tapThreshold: 250,
+      holdPrecision: 500});
+
+    thumbClass = thumbClass || ".thumb";
+    console.log(thumbClass);
     require('./modules/loadEvents.js')(this);
     this.controls = this.controls();
     var self = this;
@@ -31,8 +32,8 @@ var lightbox = {
       document.addEventListener('touchend', function(e){
         e.preventDefault();
       });
-      self.nav = self.nav();
-      self.bindEvents();
+      self.nav = self.nav(thumbClass);
+      self.bindEvents(thumbClass);
     });
   }
 };

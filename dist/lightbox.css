@@ -103,7 +103,7 @@ http://tobiasahlin.com/spinkit/
   left: 0;
   right: 0; }
 
-.hidden {
+.clone-hidden {
   visibility: hidden; }
 
 @media only screen and (max-width: 768px) {

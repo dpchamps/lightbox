@@ -12,12 +12,14 @@ var imageHold = function () {
         , prevMatrix = lightbox.transform.getElMatrix(prev);
     }
     lightbox.events.add(function translateMouseMove(e){
-      lightbox.transform.translateImage(img, x,y, e.x, e.y, initialMatrix);
+      var nX = (e.x || e.clientX),
+          nY = (e.y || e.clientY);
+      lightbox.transform.translateImage(img, x,y, nX, nY, initialMatrix);
       if(nextMatrix){
-        lightbox.transform.translateImage(next, x,y, e.x, e.y, nextMatrix);
+        lightbox.transform.translateImage(next, x,y, nX, nY, nextMatrix);
       }
       if(prevMatrix){
-        lightbox.transform.translateImage(prev, x,y, e.x, e.y, prevMatrix);
+        lightbox.transform.translateImage(prev, x,y, nX, nY, prevMatrix);
       }
     });
     lightbox.events.add(function translateTouchMove(e){

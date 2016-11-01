@@ -508,12 +508,14 @@ var imageHold = function () {
         , prevMatrix = lightbox.transform.getElMatrix(prev);
     }
     lightbox.events.add(function translateMouseMove(e){
-      lightbox.transform.translateImage(img, x,y, e.x, e.y, initialMatrix);
+      var nX = (e.x || e.clientX),
+          nY = (e.y || e.clientY);
+      lightbox.transform.translateImage(img, x,y, nX, nY, initialMatrix);
       if(nextMatrix){
-        lightbox.transform.translateImage(next, x,y, e.x, e.y, nextMatrix);
+        lightbox.transform.translateImage(next, x,y, nX, nY, nextMatrix);
       }
       if(prevMatrix){
-        lightbox.transform.translateImage(prev, x,y, e.x, e.y, prevMatrix);
+        lightbox.transform.translateImage(prev, x,y, nX, nY, prevMatrix);
       }
     });
     lightbox.events.add(function translateTouchMove(e){
@@ -729,6 +731,7 @@ var thumbTap = function () {
   this.events.add(function thumbTap(e){
     e.stopPropagation();
     var img = this.getElementsByTagName('img')[0];
+    console.log(img);
     lightbox.nav.enter(img);
   });
 };
@@ -748,19 +751,20 @@ var lightbox = {
   bindEvents : require('./scripts/bindEvents'),
   controls : require('./modules/controls.js'),
   modal : require('./modules/lightboxModal'),
-  init : function(touchOverride){
+  init : function(thumbClass){
     if(typeof window.touchme === 'undefined'){
       throw new Error('Lightbox requires touchme.js as a dependency');
     }
-    if(typeof touchOverride === 'undefined' || touchOverride === true){
-      touchme({ holdThreshold: 50,
-        swipeThreshold: 200,
-        swipePrecision: 250,
-        tapPrecision: 250,
-        tapThreshold: 250,
-        holdPrecision: 500});
-    }
 
+    touchme({ holdThreshold: 50,
+      swipeThreshold: 200,
+      swipePrecision: 250,
+      tapPrecision: 250,
+      tapThreshold: 250,
+      holdPrecision: 500});
+
+    thumbClass = thumbClass || ".thumb";
+    console.log(thumbClass);
     require('./modules/loadEvents.js')(this);
     this.controls = this.controls();
     var self = this;
@@ -768,8 +772,8 @@ var lightbox = {
       document.addEventListener('touchend', function(e){
         e.preventDefault();
       });
-      self.nav = self.nav();
-      self.bindEvents();
+      self.nav = self.nav(thumbClass);
+      self.bindEvents(thumbClass);
     });
   }
 };
@@ -1194,13 +1198,13 @@ module.exports = loadEvents;
 
 "use strict";
 
-var nav = function() {
+var nav = function(thumbClass) {
   if(typeof this === 'undefined'){
     throw new Error("Navigation has no context, call after load");
   }
   var
       lightbox = this
-    , thumbs = document.querySelectorAll('.thumb img')
+    , thumbs = document.querySelectorAll(thumbClass+' img')
     , imageSet = {last : 0}
     , cache = lightbox.imgCache
     , lightboxModal = document.getElementById('lightbox-modal')
@@ -1209,6 +1213,9 @@ var nav = function() {
   for(var i = 0; i<thumbs.length; i++){
     var image = thumbs[i];
     var idx = image.dataset.idx;
+    if(imageSet[idx]){
+      console.log("collision!");
+    }
     imageSet[idx] = image.dataset.img;
     imageSet.last = (imageSet.last < idx) ? idx : imageSet.last;
   }
@@ -1258,6 +1265,7 @@ var nav = function() {
     e.stopPropagation();
     var images = lightboxModal.getElementsByTagName('img');
     images  = Array.prototype.slice.call( images );
+
     for(var i = 0; i < images.length; i++){
       if(typeof images[i] !== 'undefined'){
         removeTouchListeners(images[i]);
@@ -1268,6 +1276,7 @@ var nav = function() {
     enableTouch(document);
     lightboxModal.style.visibility = 'hidden';
     document.body.style.overflow = 'auto';
+
   }
 
   function addTouchListeners(el){
@@ -1278,14 +1287,17 @@ var nav = function() {
     el.addEventListener('hold', holdListener);
     el.addEventListener('pinch', pinchListener);
     el.addEventListener('holdrelease', holdreleaseListener);
-    el.addEventListener('mousewheel', scrollWheelListener);
+    el.addEventListener('wheel', scrollWheelListener);
+    //el.addEventListener('DOMMouseScroll', scrollWheelListener);
     el.addEventListener('swipe', swipeListener);
   }
   function removeTouchListeners(el){
     el.removeEventListener('hold', holdListener);
     el.removeEventListener('pinch', pinchListener);
     el.removeEventListener('holdrelease', holdreleaseListener);
-    el.removeEventListener('mousewheel', scrollWheelListener);
+    el.removeEventListener('wheel', scrollWheelListener);
+    //el.addEventListener('DOMMouseScroll', scrollWheelListener);
+
   }
   function currentImage(){
     return lightboxModal.getElementsByClassName('current')[0];
@@ -1538,7 +1550,7 @@ transform.cloneZoom = function (img, matrix, newX, newY){
 
   newMatrix[4] = newMatrix[4]+newX;
   newMatrix[5] = newMatrix[5]+newY;
-  clone.classList.add('hidden');
+  clone.classList.add('clone-hidden');
   this.transformImage(clone, newMatrix);
 
   return clone;
@@ -1574,6 +1586,7 @@ transform.zoomBounds = function(img, matrix, xDist, yDist){
   }else{
     newX = 0;
   }
+
   img.parentNode.removeChild(clone);
   return{
     x: newX,
@@ -1791,7 +1804,7 @@ module.exports = util;
 
 },{}],35:[function(require,module,exports){
 "use strict";
-var bindEvents = function () {
+var bindEvents = function (thumbClass) {
   if(this === 'undefined'){
     throw new Error();
   }
@@ -1801,7 +1814,7 @@ var bindEvents = function () {
     , thumbTap = lightbox.events.get('thumbTap');
 
 
-  lightbox.util('.thumb').addEvents('tap', thumbTap);
+  lightbox.util(thumbClass).addEvents('tap', thumbTap);
 
   lightbox.controls.left.addEventListener('tap', lightbox.nav.prev);
   lightbox.controls.right.addEventListener('tap', lightbox.nav.next);

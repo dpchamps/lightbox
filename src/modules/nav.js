@@ -2,13 +2,13 @@
 
 "use strict";
 
-var nav = function() {
+var nav = function(thumbClass) {
   if(typeof this === 'undefined'){
     throw new Error("Navigation has no context, call after load");
   }
   var
       lightbox = this
-    , thumbs = document.querySelectorAll('.thumb img')
+    , thumbs = document.querySelectorAll(thumbClass+' img')
     , imageSet = {last : 0}
     , cache = lightbox.imgCache
     , lightboxModal = document.getElementById('lightbox-modal')
@@ -17,6 +17,9 @@ var nav = function() {
   for(var i = 0; i<thumbs.length; i++){
     var image = thumbs[i];
     var idx = image.dataset.idx;
+    if(imageSet[idx]){
+      console.log("collision!");
+    }
     imageSet[idx] = image.dataset.img;
     imageSet.last = (imageSet.last < idx) ? idx : imageSet.last;
   }
@@ -66,6 +69,7 @@ var nav = function() {
     e.stopPropagation();
     var images = lightboxModal.getElementsByTagName('img');
     images  = Array.prototype.slice.call( images );
+
     for(var i = 0; i < images.length; i++){
       if(typeof images[i] !== 'undefined'){
         removeTouchListeners(images[i]);
@@ -76,6 +80,7 @@ var nav = function() {
     enableTouch(document);
     lightboxModal.style.visibility = 'hidden';
     document.body.style.overflow = 'auto';
+
   }
 
   function addTouchListeners(el){
@@ -86,14 +91,17 @@ var nav = function() {
     el.addEventListener('hold', holdListener);
     el.addEventListener('pinch', pinchListener);
     el.addEventListener('holdrelease', holdreleaseListener);
-    el.addEventListener('mousewheel', scrollWheelListener);
+    el.addEventListener('wheel', scrollWheelListener);
+    //el.addEventListener('DOMMouseScroll', scrollWheelListener);
     el.addEventListener('swipe', swipeListener);
   }
   function removeTouchListeners(el){
     el.removeEventListener('hold', holdListener);
     el.removeEventListener('pinch', pinchListener);
     el.removeEventListener('holdrelease', holdreleaseListener);
-    el.removeEventListener('mousewheel', scrollWheelListener);
+    el.removeEventListener('wheel', scrollWheelListener);
+    //el.addEventListener('DOMMouseScroll', scrollWheelListener);
+
   }
   function currentImage(){
     return lightboxModal.getElementsByClassName('current')[0];
