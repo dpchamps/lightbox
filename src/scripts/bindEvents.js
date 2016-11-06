@@ -8,7 +8,6 @@ var bindEvents = function (thumbClass) {
       lightbox = this
     , thumbTap = lightbox.events.get('thumbTap');
 
-
   lightbox.util(thumbClass).addEvents('tap', thumbTap);
 
   lightbox.controls.left.addEventListener('tap', lightbox.nav.prev);

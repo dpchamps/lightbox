@@ -9,19 +9,21 @@ var nav = function(thumbClass) {
   var
       lightbox = this
     , thumbs = document.querySelectorAll(thumbClass+' img')
-    , imageSet = {last : 0}
+    , imageSet = {}
     , cache = lightbox.imgCache
     , lightboxModal = document.getElementById('lightbox-modal')
-    , imageCycle = false;
+    , imageCycle = false
+    , currentGroup;
 
   for(var i = 0; i<thumbs.length; i++){
     var image = thumbs[i];
     var idx = image.dataset.idx;
-    if(imageSet[idx]){
-      console.log("collision!");
+    var group = image.dataset.imagegroup;
+    if(typeof imageSet[group] === "undefined"){
+      imageSet[group] = { last:0};
     }
-    imageSet[idx] = image.dataset.img;
-    imageSet.last = (imageSet.last < idx) ? idx : imageSet.last;
+    imageSet[group][idx] = image.dataset.img;
+    imageSet[group].last = (imageSet[group].last < idx) ? idx : imageSet[group].last;
   }
   var holdListener = lightbox.events.get('holdListener')
     , stopTapProp = lightbox.events.get('stopTapProp')
@@ -35,7 +37,6 @@ var nav = function(thumbClass) {
 
   //initialize cache complete function
   lightbox.imgCache.complete().then(function(){
-    console.log("cache complete");
     lightbox.modal('spinner')[0].style.visibility = 'hidden';
   });
   function disableDrag(el){
@@ -54,7 +55,9 @@ var nav = function(thumbClass) {
   function lightboxEnter(img){
     var
         idx = img.dataset.idx
-      , src = imageSet[idx];
+      , group = img.dataset.imagegroup
+      , src = imageSet[group][idx];
+    currentGroup = group;
     lightbox.imgCache.loadImage(src).then(function(image){
       addImage(idx, image);
       if(!lightbox.imgCache.hasCached() && !lightbox.imgCache.processing()){
@@ -64,9 +67,13 @@ var nav = function(thumbClass) {
     lightboxModal.style.visibility = 'visible';
     document.body.style.overflow = 'hidden';
   }
+
   function lightboxExit(e){
-    console.log(e.target);
-    e.stopPropagation();
+    //e.stopPropagation();
+    console.log(e.target, e.currentTarget);
+    if(e.target !== e.currentTarget){
+      return false;
+    }
     var images = lightboxModal.getElementsByTagName('img');
     images  = Array.prototype.slice.call( images );
 
@@ -110,7 +117,6 @@ var nav = function(thumbClass) {
     var
         nextImage = getImage('next')
       , prevImage = getImage('prev');
-
     imageCycle = true;
     cache.loadImage(nextImage.image).then(function(image){
       addImage(nextImage.idx, image, 'next');
@@ -158,10 +164,10 @@ var nav = function(thumbClass) {
       returnObj = {};
     switch(position){
       case 'next':
-        nextImg = imageSet[idx+1];
+        nextImg = imageSet[currentGroup][idx+1];
         newIdx = idx+1;
         if(typeof nextImg === 'undefined'){
-          nextImg = imageSet[1];
+          nextImg = imageSet[currentGroup][1];
           newIdx=1;
         }
         returnObj = {
@@ -171,11 +177,11 @@ var nav = function(thumbClass) {
             break;
       case 'prev':
       case 'previous':
-        prevImg = imageSet[idx-1];
+        prevImg = imageSet[currentGroup][idx-1];
         newIdx = idx-1;
         if(typeof prevImg === 'undefined'){
-          prevImg = imageSet[imageSet.last];
-          newIdx = imageSet.last;
+          prevImg = imageSet[currentGroup][imageSet[currentGroup].last];
+          newIdx = imageSet[currentGroup].last;
         }
         returnObj = {
           image : prevImg,
@@ -190,7 +196,7 @@ var nav = function(thumbClass) {
   }
   function nextImage(e){
     if(typeof e !== 'undefined'){
-      e.stopPropagation();
+     // e.stopPropagation();
     }
     var
         next = getImage('next')
@@ -217,7 +223,7 @@ var nav = function(thumbClass) {
   }
   function prevImage(e){
     if(typeof e !== 'undefined'){
-      e.stopPropagation();
+      //e.stopPropagation();
     }
     var
         prev = getImage('prev')

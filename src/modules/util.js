@@ -28,17 +28,13 @@ var util = function(sel){
      */
       selectorFunctions = {
         addEvents : function(event, handler){
-          for (var node in nodeList) {
-            if (nodeList.hasOwnProperty(node)) {
-              nodeList[node].addEventListener(event, handler);
-            }
+          for(var i = 0, j = nodeList.length; i < j; i ++){
+            nodeList[i].addEventListener(event, handler);
           }
         },
         removeEvents : function(event,  handler){
-          for (var node in nodeList) {
-            if (nodeList.hasOwnProperty(node)) {
-              nodeList[node].removeEventListener(event, handler);
-            }
+          for(var i = 0, j = nodeList.length; i < j; i ++){
+            nodeList[i].removeEventListener(event, handler);
           }
         }
       },

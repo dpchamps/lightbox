@@ -27,15 +27,21 @@ var imgCache = function(){
       hasCached = false;
       processing = true;
       var pArray = [];
-      for(var idx in images){
-          if(idx === 'last'){
-            continue;
+      
+      for(var group in images){
+        if(images.hasOwnProperty(group)){
+          for(var idx in images[group]){
+            if(images[group].hasOwnProperty(idx)){
+              if(idx === 'last'){
+                continue;
+              }
+              pArray.push( loadImage(images[group][idx]) );
+            }
           }
-          pArray.push( loadImage(images[idx]) );
+        }
       }
       Promise.all(pArray).then(function(){
         //the images have been cached
-        isComplete();
         hasCached = true;
         processing = false;
       });

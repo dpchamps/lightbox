@@ -47,7 +47,7 @@ var lightbox = {
   },
   closeLightBox : function(){
     var lightboxModal =  document.getElementById('lightbox-modal');
-		
+		console.log("    dfg;ldfhsg;lksj ", this.nodeAppended);
 
     lightboxModal.style.visibility = 'hidden';
     document.body.style.overflow = 'auto';

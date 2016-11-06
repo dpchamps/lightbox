@@ -8,6 +8,7 @@ $lightbox-control-height : 30px;
   width:100%;
   height:100%;
   font-size: $lightbox-control-height;
+  pointer-events: none;
 }
 
 .lightbox-controls .glyphicon{
@@ -16,6 +17,7 @@ $lightbox-control-height : 30px;
   text-shadow: 1px 1px 1px darken($black, 100%);
   height: $lightbox-control-height;
   cursor: pointer;
+  pointer-events: auto;
 }
 .lightbox-controls .glyphicon-remove{
   top: $lightbox-control-height/2;
