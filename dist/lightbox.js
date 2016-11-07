@@ -1529,8 +1529,8 @@ var transform = {
 };
 transform.prefix = (function () {
   var testEl = document.createElement('div');
-  if(testEl.style.transform === null) {
-    var vendors = ['Webkit', 'Moz', 'ms', 'webkit'];
+  if(testEl.style.transform === null || testEl.style.transform === undefined) {
+    var vendors = ['Webkit', 'Moz', 'ms'];
     for(var vendor in vendors) {
       if(testEl.style[ vendors[vendor] + 'Transform' ] !== undefined) {
         return vendors[vendor] + 'Transform';
