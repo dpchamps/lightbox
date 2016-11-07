@@ -1133,7 +1133,7 @@ var imgCache = function(){
       hasCached = false;
       processing = true;
       var pArray = [];
-      
+
       for(var group in images){
         if(images.hasOwnProperty(group)){
           for(var idx in images[group]){
@@ -1527,6 +1527,20 @@ var transform = {
   maxZoom : 3.3,
   minZoom : 0.9
 };
+transform.prefix = (function () {
+  var testEl = document.createElement('div');
+  if(testEl.style.transform === null) {
+    var vendors = ['Webkit', 'Moz', 'ms'];
+    for(var vendor in vendors) {
+      if(testEl.style[ vendors[vendor] + 'Transform' ] !== undefined) {
+        return vendors[vendor] + 'Transform';
+      }
+    }
+  }
+  return 'transform';
+})();
+
+
 transform.round = function(val, decimals){
   return Number( Math.round(val+'e'+decimals)+'e-'+decimals );
 };
@@ -1539,7 +1553,8 @@ transform.matrixArray = function(matrix){
 };
 transform.getElMatrix = function(el){
   if(window.getComputedStyle(el).transform === 'none'){
-    el.style.transform = "scale(1,1)";
+    console.log("el Matrix", this.prefix);
+    el.style[this.prefix] = "scale(1,1)";
   }
   return this.matrixArray(window.getComputedStyle(el).transform);
 };
@@ -1548,7 +1563,7 @@ transform.getXScale = function(img){
 
 };
 transform.transformImage = function(img, matrix){
-  img.style.transform = "matrix("+matrix.join()+")";
+  img.style[this.prefix] = "matrix("+matrix.join()+")";
 };
 transform.getComputedRect = function(el){
   var
@@ -1673,10 +1688,10 @@ transform.getNewFocusPoint = function(zoomScale, clientX, clientY, img){
   };
 };
 transform.getImageTransformMatrix = function(img, zoomScale, clientX, clientY){
-  var transformStyle = window.getComputedStyle(img).transform;
+  var transformStyle = window.getComputedStyle(img)[this.prefix];
   if(transformStyle === 'none'){
-    img.style.transform = "scale(1,1)";
-    transformStyle = window.getComputedStyle(img).transform;
+    img.style[this.prefix] = "scale(1,1)";
+    transformStyle = window.getComputedStyle(img)[this.prefix];
   }
   var
     matrix = this.matrixArray(transformStyle),
