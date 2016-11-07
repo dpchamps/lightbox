@@ -1552,10 +1552,10 @@ transform.matrixArray = function(matrix){
   return matrix;
 };
 transform.getElMatrix = function(el){
-  if(window.getComputedStyle(el).transform === 'none'){
+  if(window.getComputedStyle(el)[this.prefix] === 'none'){
     el.style[this.prefix] = "scale(1,1)";
   }
-  return this.matrixArray(window.getComputedStyle(el).transform);
+  return this.matrixArray(window.getComputedStyle(el)[this.prefix]);
 };
 transform.getXScale = function(img){
   return this.round(this.getElMatrix(img)[0], 2);
