@@ -614,7 +614,7 @@ var imagePinch = function () {
   lightbox.events.add(function pinchListener(e){
     var
       img = e.target,
-      zoomScale = (e.distance - e.initialPinch.distance)/500,
+      zoomScale = (e.distance - e.initialPinch.distance)/250,
       cX = e.midPoint.x,
       cY = e.midPoint.y,
       oX = e.initialPinch.midPoint.x,
@@ -636,7 +636,7 @@ var imageScrollWheel = function () {
   lightbox.events.add(function scrollWheelListener(e){
     var img = e.target;
     var delta = e.deltaY,
-      zoomScale = -0.10;
+      zoomScale = -0.05;
     if(delta < 0){
       zoomScale = zoomScale*-1;
     }
@@ -1524,8 +1524,8 @@ module.exports = (function(){
 "use strict";
 
 var transform = {
-  maxZoom : 3.3,
-  minZoom : 0.9
+  maxZoom : 3,
+  minZoom : 1
 };
 transform.prefix = (function () {
   var testEl = document.createElement('div');

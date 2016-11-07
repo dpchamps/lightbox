@@ -5,7 +5,7 @@ var imageScrollWheel = function () {
   lightbox.events.add(function scrollWheelListener(e){
     var img = e.target;
     var delta = e.deltaY,
-      zoomScale = -0.10;
+      zoomScale = -0.05;
     if(delta < 0){
       zoomScale = zoomScale*-1;
     }

@@ -5,7 +5,7 @@ var imagePinch = function () {
   lightbox.events.add(function pinchListener(e){
     var
       img = e.target,
-      zoomScale = (e.distance - e.initialPinch.distance)/500,
+      zoomScale = (e.distance - e.initialPinch.distance)/250,
       cX = e.midPoint.x,
       cY = e.midPoint.y,
       oX = e.initialPinch.midPoint.x,

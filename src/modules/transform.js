@@ -1,8 +1,8 @@
 "use strict";
 
 var transform = {
-  maxZoom : 3.3,
-  minZoom : 0.9
+  maxZoom : 3,
+  minZoom : 1
 };
 transform.prefix = (function () {
   var testEl = document.createElement('div');
