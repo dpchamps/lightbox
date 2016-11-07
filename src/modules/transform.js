@@ -7,7 +7,7 @@ var transform = {
 transform.prefix = (function () {
   var testEl = document.createElement('div');
   if(testEl.style.transform === null) {
-    var vendors = ['Webkit', 'Moz', 'ms'];
+    var vendors = ['Webkit', 'Moz', 'ms', 'webkit'];
     for(var vendor in vendors) {
       if(testEl.style[ vendors[vendor] + 'Transform' ] !== undefined) {
         return vendors[vendor] + 'Transform';
@@ -16,7 +16,7 @@ transform.prefix = (function () {
   }
   return 'transform';
 })();
-
+console.log(transform.prefix);
 
 transform.round = function(val, decimals){
   return Number( Math.round(val+'e'+decimals)+'e-'+decimals );
@@ -165,7 +165,7 @@ transform.getNewFocusPoint = function(zoomScale, clientX, clientY, img){
 };
 transform.getImageTransformMatrix = function(img, zoomScale, clientX, clientY){
   var transformStyle = window.getComputedStyle(img)[this.prefix];
-  if(transformStyle === 'none'){
+  if(transformStyle === 'none' || !transformStyle || transformStyle === null){
     img.style[this.prefix] = "scale(1,1)";
     transformStyle = window.getComputedStyle(img)[this.prefix];
   }
