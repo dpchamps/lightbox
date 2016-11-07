@@ -13,6 +13,30 @@ module.exports = function(grunt) {
         }
       }
     },
+    postcss: {
+      options: {
+        map: {
+          inline: false,
+          prev: 'dist/'
+        },
+        processors: [
+          require('autoprefixer')({browsers: [
+            'Android 2.3',
+            'Android >= 4',
+            'Chrome >= 20',
+            'Firefox >= 24',
+            'Explorer >= 8',
+            'iOS >= 5',
+            'Opera >= 12',
+            'Safari >= 5'
+          ]}),
+          require('csswring')
+        ]
+      },
+      dist: {
+        src: "dist/*.css"
+      }
+    },
     concat: {
       options: {
         separator: "\n\n"
@@ -80,9 +104,10 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-browserify');
   grunt.loadNpmTasks('grunt-sass');
+  grunt.loadNpmTasks('grunt-postcss');
 
   grunt.registerTask('hint', 'jshint');
   grunt.registerTask('test', ['jshint', 'qunit']);
   grunt.registerTask('serve', ['build', 'watch']);
-  grunt.registerTask('build', ['browserify','jshint', 'uglify', 'sass']);
+  grunt.registerTask('build', ['browserify','jshint', 'uglify', 'sass', 'postcss']);
 };

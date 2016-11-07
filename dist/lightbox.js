@@ -1553,7 +1553,6 @@ transform.matrixArray = function(matrix){
 };
 transform.getElMatrix = function(el){
   if(window.getComputedStyle(el).transform === 'none'){
-    console.log("el Matrix", this.prefix);
     el.style[this.prefix] = "scale(1,1)";
   }
   return this.matrixArray(window.getComputedStyle(el).transform);
