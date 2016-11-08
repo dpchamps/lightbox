@@ -786,12 +786,16 @@ var lightbox = {
   },
   closeLightBox : function(){
     var lightboxModal =  document.getElementById('lightbox-modal');
-		
-
     lightboxModal.style.visibility = 'hidden';
     document.body.style.overflow = 'auto';
     lightboxModal.removeChild(this.nodeAppended);
     this.nodeAppended = null;
+  },
+  reCache : function(thumbClass){
+    thumbClass = thumbClass || ".thumb";
+    this.util(thumbClass).removeEvents(lightbox.events.get('thumbTap'));
+    this.util(thumbClass).addEvents(lightbox.events.get('thumbTap'));
+    this.nav.cacheCycle();
   }
 };
 
@@ -1233,17 +1237,20 @@ var nav = function(thumbClass) {
     , lightboxModal = document.getElementById('lightbox-modal')
     , imageCycle = false
     , currentGroup;
-
-  for(var i = 0; i<thumbs.length; i++){
-    var image = thumbs[i];
-    var idx = image.dataset.idx;
-    var group = image.dataset.imagegroup;
-    if(typeof imageSet[group] === "undefined"){
-      imageSet[group] = { last:0};
+  function cacheCycle(){
+    imageSet = {};
+    for(var i = 0; i<thumbs.length; i++){
+      var image = thumbs[i];
+      var idx = image.dataset.idx;
+      var group = image.dataset.imagegroup;
+      if(typeof imageSet[group] === "undefined"){
+        imageSet[group] = { last:0};
+      }
+      imageSet[group][idx] = image.dataset.img;
+      imageSet[group].last = (imageSet[group].last < idx) ? idx : imageSet[group].last;
     }
-    imageSet[group][idx] = image.dataset.img;
-    imageSet[group].last = (imageSet[group].last < idx) ? idx : imageSet[group].last;
   }
+  cacheCycle();
   var holdListener = lightbox.events.get('holdListener')
     , stopTapProp = lightbox.events.get('stopTapProp')
     , dbltapListener = lightbox.events.get('dbltapListener')
@@ -1490,7 +1497,8 @@ var nav = function(thumbClass) {
       return imageCycle;
     },
     loadImageCycle : loadImageCycle,
-    hideImageCycle : hideImageCycle
+    hideImageCycle : hideImageCycle,
+    cacheCycle: cacheCycle
   };
 };
 

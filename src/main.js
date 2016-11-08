@@ -47,12 +47,16 @@ var lightbox = {
   },
   closeLightBox : function(){
     var lightboxModal =  document.getElementById('lightbox-modal');
-		
-
     lightboxModal.style.visibility = 'hidden';
     document.body.style.overflow = 'auto';
     lightboxModal.removeChild(this.nodeAppended);
     this.nodeAppended = null;
+  },
+  reCache : function(thumbClass){
+    thumbClass = thumbClass || ".thumb";
+    this.util(thumbClass).removeEvents(lightbox.events.get('thumbTap'));
+    this.util(thumbClass).addEvents(lightbox.events.get('thumbTap'));
+    this.nav.cacheCycle();
   }
 };
 
