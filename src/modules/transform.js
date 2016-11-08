@@ -16,7 +16,6 @@ transform.prefix = (function () {
   }
   return 'transform';
 })();
-console.log(transform.prefix);
 
 transform.round = function(val, decimals){
   return Number( Math.round(val+'e'+decimals)+'e-'+decimals );

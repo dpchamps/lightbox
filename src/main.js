@@ -24,7 +24,6 @@ var lightbox = {
       holdPrecision: 500});
 
     thumbClass = thumbClass || ".thumb";
-    console.log(thumbClass);
     require('./modules/loadEvents.js')(this);
     this.controls = this.controls();
     var self = this;
@@ -42,7 +41,6 @@ var lightbox = {
     lightboxModal.style.visibility = 'visible';
     document.body.style.overflow = 'hidden';
     this.nodeAppended = node;
-    console.log(this.nodeAppended);
     lightboxModal.appendChild(this.nodeAppended);
   },
   closeLightBox : function(){
@@ -55,7 +53,6 @@ var lightbox = {
   reCache : function(thumbClass){
     thumbClass = thumbClass || ".thumb";
     this.util(thumbClass).removeEvents('tap', lightbox.events.get('thumbTap'));
-    console.log('adding tap');
     this.util(thumbClass).addEvents('tap', lightbox.events.get('thumbTap'));
     this.nav.cacheCycle();
   }
