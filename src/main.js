@@ -54,8 +54,9 @@ var lightbox = {
   },
   reCache : function(thumbClass){
     thumbClass = thumbClass || ".thumb";
-    this.util(thumbClass).removeEvents(lightbox.events.get('thumbTap'));
-    this.util(thumbClass).addEvents(lightbox.events.get('thumbTap'));
+    this.util(thumbClass).removeEvents('tap', lightbox.events.get('thumbTap'));
+    console.log('adding tap');
+    this.util(thumbClass).addEvents('tap', lightbox.events.get('thumbTap'));
     this.nav.cacheCycle();
   }
 };

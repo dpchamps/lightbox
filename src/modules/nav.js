@@ -16,9 +16,10 @@ var nav = function(thumbClass) {
     , currentGroup;
   function cacheCycle(){
     imageSet = {};
+    thumbs = document.querySelectorAll(thumbClass+' img');
     for(var i = 0; i<thumbs.length; i++){
       var image = thumbs[i];
-      var idx = image.dataset.idx;
+      var idx = parseInt(image.dataset.idx, 10);
       var group = image.dataset.imagegroup;
       if(typeof imageSet[group] === "undefined"){
         imageSet[group] = { last:0};
