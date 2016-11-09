@@ -16,21 +16,20 @@ var lightbox = {
       throw new Error('Lightbox requires touchme.js as a dependency');
     }
 
-    touchme({ holdThreshold: 50,
+    touchme({
+      holdThreshold: 50,
       swipeThreshold: 200,
       swipePrecision: 250,
       tapPrecision: 250,
       tapThreshold: 250,
-      holdPrecision: 500});
+      holdPrecision: 500
+    });
 
     thumbClass = thumbClass || ".thumb";
     require('./modules/loadEvents.js')(this);
     this.controls = this.controls();
     var self = this;
     require('domready')(function(){
-      document.addEventListener('touchend', function(e){
-        e.preventDefault();
-      });
       self.nav = self.nav(thumbClass);
       self.bindEvents(thumbClass);
     });

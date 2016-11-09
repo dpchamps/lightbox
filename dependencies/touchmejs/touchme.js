@@ -44,7 +44,8 @@ var touchme = function(args) {
         holdInterval, lastX, lastY, //cursor tracking while holding
         initialPinch,
         swipeTimeout = false,
-        swipeTimer;
+        swipeTimer,
+        initialEvent;
 
     //where args is an object that can replace any of the default arguments
     var defaults = {
@@ -197,12 +198,16 @@ var touchme = function(args) {
 
     //tap, dbltap, hold, initialPinch
     setListener(document, touchDevice ? 'mousedown touchstart' : 'mousedown', function(e){
+        if(!initialEvent){
+          initialEvent = e.type
+        }else if(initialEvent !== e.type){
+          return false;
+        }
         touchStart = true;
         tapNumber += 1;
         var pointer = getPointer(e);
         oldX = currentX = pointer.clientX;
         oldY = currentY = pointer.clientY;
-
         //initialize tapTimer
         clearTimeout(tapTimer);
         tapTimer = setTimeout(function(){
@@ -215,6 +220,7 @@ var touchme = function(args) {
                     x : currentX,
                     y : currentY
                 });
+                initialEvent = undefined;
                 tapNumber = 0;
             }else if( !isInTapLimits() || isHolding ){
                 tapNumber = 0;
@@ -339,13 +345,17 @@ var touchme = function(args) {
             swipeEvents = [],
             deltaX = oldX - currentX,
             deltaY = oldY - currentY;
-
         //calculate radians for direction
         var rads = Math.atan2((currentY-oldY), -(currentX-oldX))+Math.PI,
             multiTouch = (e.touches && e.touches.length > 1);
 
         //the user is swiping...
-        if((deltaX <= defaults.swipePrecision || deltaY <= defaults.swipePrecision) && multiTouch === false){
+        if(
+          (deltaX <= defaults.swipePrecision || deltaY <= defaults.swipePrecision)
+          && multiTouch === false
+          && deltaX > 0
+          && deltaY > 0
+        ){
             swipeEvents.push('swipe');
         }
 
@@ -376,6 +386,7 @@ var touchme = function(args) {
               degrees: rads*(180/Math.PI)
             }
           });
+          tapNumber = 0;
         }
         clearTimeout(swipeTimer);
       }else{
