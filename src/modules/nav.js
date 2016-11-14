@@ -29,16 +29,14 @@ var nav = function(thumbClass) {
     }
   }
   cacheCycle();
-  var holdListener = lightbox.events.get('holdListener')
-    , stopTapProp = lightbox.events.get('stopTapProp')
-    , dbltapListener = lightbox.events.get('dbltapListener')
-    , pinchListener = lightbox.events.get('pinchListener')
-    , holdreleaseListener = lightbox.events.get('holdreleaseListener')
-    , disableDefault = lightbox.events.get('disableDefault')
-    , scrollWheelListener = lightbox.events.get('scrollWheelListener')
-    , swipeListener = lightbox.events.get('swipeListener');
-
-
+  var holdListener = lightbox.events.get('holdListener');
+  var stopTapProp = lightbox.events.get('stopTapProp');
+  var dbltapListener = lightbox.events.get('dbltapListener');
+  var pinchListener = lightbox.events.get('pinchListener');
+  var holdreleaseListener = lightbox.events.get('holdreleaseListener');
+  var disableDefault = lightbox.events.get('disableDefault');
+  var scrollWheelListener = lightbox.events.get('scrollWheelListener');
+  var swipeListener = lightbox.events.get('swipeListener');
   //initialize cache complete function
   lightbox.imgCache.complete().then(function(){
     lightbox.modal('spinner')[0].style.visibility = 'hidden';

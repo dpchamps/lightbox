@@ -42,11 +42,13 @@ events.idExists = function(id){
     Throw an error if the id doesn't exist, return the function if it does.
  */
 events.getById = function(id){
-  if(!( this._eventHash.hasOwnProperty(id) )){
+
+  if(!( events._eventHash.hasOwnProperty(id) )){
+
     throw new Error(id+" doesn't exist");
   }
 
-  return this._eventHash[id];
+  return events._eventHash[id];
 };
 
 /*
@@ -67,8 +69,8 @@ events.getId = function(name){
    Checks if the name reference hash exists, throws an error or returns the id associated with it.
  */
 events.getByName = function(name){
-  var id = this.getId(name);
-  return this._eventHash[id];
+  var id = events.getId(name);
+  return events._eventHash[id];
 };
 
 /*
@@ -85,21 +87,21 @@ events.add = function(handler){
     throw new Error('Expected type function for handler');
   }
 
-  var referenceId = this._id,
+  var referenceId = events._id,
       funcName = handler.name,
       hasName = (typeof funcName !== 'undefined' && funcName !== "");
   //if the function isn't anonymous, allow the lookup by function name
   if(hasName){
     //do not allow duplicates
-    if(this._nameRef.hasOwnProperty(funcName)){
+    if(events._nameRef.hasOwnProperty(funcName)){
       throw new Error('Function already exists by name '+ funcName);
     } else{
-      this._nameRef[funcName] = referenceId;
+      events._nameRef[funcName] = referenceId;
     }
   }
 
-  this._eventHash[referenceId] = handler;
-  this._id += 1;
+  events._eventHash[referenceId] = handler;
+  events._id += 1;
 
   return (hasName) ? funcName : referenceId;
 };
@@ -115,18 +117,17 @@ events.add = function(handler){
  */
 events.get = function(handler){
   var func;
-
   switch(typeof handler){
     case 'string':
       try{
-        func = this.getByName(handler);
+        func = events.getByName(handler);
       }
       catch(e){
-        func = this.getById(parseInt(handler, 10));
+        func = events.getById(parseInt(handler, 10));
       }
       break;
     case 'number':
-      func = this.getById(handler);
+      func = events.getById(handler);
           break;
     default:
       throw new Error('Expected string or number, received: '+ typeof(handler));
@@ -142,11 +143,11 @@ events.remove = function(handler){
   switch(typeof handler){
     case 'string':
       try{
-        id = this.getId(handler);
-        delete this._nameRef[handler];
+        id = events.getId(handler);
+        delete events._nameRef[handler];
       }
       catch(e){
-        if(this.idExists(handler)){
+        if(events.idExists(handler)){
           id = parseInt(handler, 10);
         }else{
           throw new Error(handler+" doesn't exist");
@@ -154,7 +155,7 @@ events.remove = function(handler){
       }
       break;
     case 'number':
-      if(this.idExists(handler)){
+      if(events.idExists(handler)){
         id = parseInt(handler, 10);
       }else{
         throw new Error(handler+" doesn't exist");
@@ -164,8 +165,8 @@ events.remove = function(handler){
       throw new Error('Expected string or number, received: '+ typeof(handler));
   }
 
-  func = this.getById(id);
-  delete this._eventHash[id];
+  func = events.getById(id);
+  delete events._eventHash[id];
 
   return func;
 };
@@ -175,9 +176,9 @@ events.remove = function(handler){
     reset erreytang
  */
 events.clear = function(){
-  this._eventHash = {};
-  this._nameRef = {};
-  this._id = 0;
+  events._eventHash = {};
+  events._nameRef = {};
+  events._id = 0;
 };
 
 
