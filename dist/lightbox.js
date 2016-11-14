@@ -262,25 +262,6 @@ var is = require('./is.js');
 },{}],11:[function(require,module,exports){
 /*!
 {
-  "name": "classList",
-  "caniuse": "classlist",
-  "property": "classlist",
-  "tags": ["dom"],
-  "builderAliases": ["dataview_api"],
-  "notes": [{
-    "name": "MDN Docs",
-    "href": "https://developer.mozilla.org/en/DOM/element.classList"
-  }]
-}
-!*/
-var Modernizr = require('./../../lib/Modernizr.js');
-var docElement = require('./../../lib/docElement.js');
-  Modernizr.addTest('classlist', 'classList' in docElement);
-
-
-},{"./../../lib/Modernizr.js":2,"./../../lib/docElement.js":5}],12:[function(require,module,exports){
-/*!
-{
   "name": "ES6 Promises",
   "property": "promises",
   "caniuse": "promises",
@@ -321,7 +302,7 @@ var Modernizr = require('./../../lib/Modernizr.js');
   });
 
 
-},{"./../../lib/Modernizr.js":2}],13:[function(require,module,exports){
+},{"./../../lib/Modernizr.js":2}],12:[function(require,module,exports){
 /*!
   * domready (c) Dustin Diaz 2014 - License MIT
   */
@@ -353,7 +334,7 @@ var Modernizr = require('./../../lib/Modernizr.js');
 
 });
 
-},{}],14:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -446,7 +427,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],15:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 "use strict";
 var disableDefault = function () {
   this.events.add(function disableDefault(e){
@@ -456,7 +437,7 @@ var disableDefault = function () {
 
 module.exports = disableDefault;
 
-},{}],16:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 "use strict";
 
 var imageDbltap = function () {
@@ -493,7 +474,7 @@ var imageDbltap = function () {
 
 module.exports = imageDbltap;
 
-},{}],17:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 
 "use strict";
 var imageHold = function () {
@@ -541,7 +522,7 @@ var imageHold = function () {
 
 module.exports = imageHold;
 
-},{}],18:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 
 "use strict";
 var imageHoldRelease = function () {
@@ -606,7 +587,7 @@ var imageHoldRelease = function () {
 
 module.exports = imageHoldRelease;
 
-},{}],19:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 
 "use strict";
 var imagePinch = function () {
@@ -628,7 +609,7 @@ var imagePinch = function () {
 
 module.exports = imagePinch;
 
-},{}],20:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 
 "use strict";
 var imageScrollWheel = function () {
@@ -647,7 +628,7 @@ var imageScrollWheel = function () {
 
 module.exports = imageScrollWheel;
 
-},{}],21:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 
 "use strict";
 var imageSwipe = function () {
@@ -714,7 +695,7 @@ var imageSwipe = function () {
 
 module.exports = imageSwipe;
 
-},{}],22:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 "use strict";
 var stopTapProp = function () {
   this.events.add(function stopTapProp(e){
@@ -723,7 +704,7 @@ var stopTapProp = function () {
 };
 module.exports = stopTapProp;
 
-},{}],23:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 
 "use strict";
 var thumbTap = function () {
@@ -736,7 +717,7 @@ var thumbTap = function () {
 };
 module.exports = thumbTap;
 
-},{}],24:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 /*globals touchme*/
 "use strict";
 require('./modules/polyfill-checks.js');
@@ -800,7 +781,7 @@ window.lightbox = lightbox;
 
 
 
-},{"./modules/animations.js":25,"./modules/controls.js":26,"./modules/events.js":27,"./modules/imgCache.js":28,"./modules/lightboxModal":29,"./modules/loadEvents.js":30,"./modules/nav.js":31,"./modules/polyfill-checks.js":32,"./modules/transform.js":33,"./modules/util.js":34,"./scripts/bindEvents":35,"domready":13}],25:[function(require,module,exports){
+},{"./modules/animations.js":24,"./modules/controls.js":25,"./modules/events.js":26,"./modules/imgCache.js":27,"./modules/lightboxModal":28,"./modules/loadEvents.js":29,"./modules/nav.js":30,"./modules/polyfill-checks.js":31,"./modules/transform.js":32,"./modules/util.js":33,"./scripts/bindEvents":34,"domready":12}],24:[function(require,module,exports){
 /*
 functions that move the image around the lightbox
 
@@ -884,7 +865,7 @@ var translate = function(image){
 
 module.exports = translate;
 
-},{}],26:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 "use strict";
 var controls = function(){
   var
@@ -918,7 +899,7 @@ var controls = function(){
 module.exports = controls;
 
 
-},{}],27:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 /**
  * lightbox events / event  handlers
  *
@@ -1105,7 +1086,7 @@ events.clear = function(){
 
 module.exports = events;
 
-},{}],28:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 "use strict";
 var imgCache = function(){
 
@@ -1172,7 +1153,7 @@ var imgCache = function(){
 
 module.exports = imgCache();
 
-},{}],29:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 
 "use strict";
 var lightboxModal = function (needle, findType) {
@@ -1203,7 +1184,7 @@ var lightboxModal = function (needle, findType) {
 
 module.exports = lightboxModal;
 
-},{}],30:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 "use strict";
 var loadEvents = function(context) {
   require('./../eventlisteners/disableDefault').call(context);
@@ -1218,7 +1199,7 @@ var loadEvents = function(context) {
 
 module.exports = loadEvents;
 
-},{"./../eventlisteners/disableDefault":15,"./../eventlisteners/imageDblTap":16,"./../eventlisteners/imageHold":17,"./../eventlisteners/imageHoldRelease":18,"./../eventlisteners/imagePinch":19,"./../eventlisteners/imageScrollWheel":20,"./../eventlisteners/imageSwipe":21,"./../eventlisteners/stopTapProp":22}],31:[function(require,module,exports){
+},{"./../eventlisteners/disableDefault":14,"./../eventlisteners/imageDblTap":15,"./../eventlisteners/imageHold":16,"./../eventlisteners/imageHoldRelease":17,"./../eventlisteners/imagePinch":18,"./../eventlisteners/imageScrollWheel":19,"./../eventlisteners/imageSwipe":20,"./../eventlisteners/stopTapProp":21}],30:[function(require,module,exports){
 
 
 "use strict";
@@ -1500,7 +1481,7 @@ var nav = function(thumbClass) {
 
 module.exports = nav;
 
-},{}],32:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 /*globals Modernizr*/
 /*
 The lightbox relies on serveral features that might not be widely supported.
@@ -1509,22 +1490,16 @@ So let's try and make is flexible
 "use strict";
 
 module.exports = (function(){
-  require('browsernizr/test/dom/classlist.js');
   require('browsernizr/test/es6/promises.js');
 
   window.Modernizr = require('browsernizr');
 
-  if(Modernizr.classlist === false){
-    require('classlist-polyfill');
-  }
-
   if(Modernizr.promise === false){
     window.Promise = require('es6-promise').Promise;
   }
-
 })();
 
-},{"browsernizr":1,"browsernizr/test/dom/classlist.js":11,"browsernizr/test/es6/promises.js":12,"classlist-polyfill":"classList","es6-promise":"promise"}],33:[function(require,module,exports){
+},{"browsernizr":1,"browsernizr/test/es6/promises.js":11,"es6-promise":"promise"}],32:[function(require,module,exports){
 "use strict";
 
 var transform = {
@@ -1781,7 +1756,7 @@ transform.smoothTranslate = function(el, ms, x, y, precision){
 };
 module.exports = transform;
 
-},{}],34:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 /**
  * utilities functions, top level selector, etc
  */
@@ -1844,7 +1819,7 @@ var util = function(sel){
 
 module.exports = util;
 
-},{}],35:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 "use strict";
 var bindEvents = function (thumbClass) {
   if(this === 'undefined'){
@@ -1865,7 +1840,7 @@ var bindEvents = function (thumbClass) {
 
 module.exports = bindEvents;
 
-},{"./../eventlisteners/thumbTap":23}],"classList":[function(require,module,exports){
+},{"./../eventlisteners/thumbTap":22}],"classList":[function(require,module,exports){
 /*
  * classList.js: Cross-browser full element.classList implementation.
  * 2014-07-23
@@ -3077,4 +3052,4 @@ if ("document" in window.self) {
 
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":14}]},{},[24]);
+},{"_process":13}]},{},[23]);
