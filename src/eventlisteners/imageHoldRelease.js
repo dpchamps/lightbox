@@ -12,15 +12,9 @@ var imageHoldRelease = function () {
     if(lightbox.nav.imageCycle()){
       var
         next = lightbox.modal('next')[0]
-        , nextMatrix
+        , nextMatrix = lightbox.transform.getElMatrix(next)
         , prev = lightbox.modal('prev')[0]
-        , prevMatrix;
-      if (next && next.complete){
-        nextMatrix = lightbox.transform.getElMatrix(next);
-      }
-      if(prev && prev.complete){
-        prevMatrix = lightbox.transform.getElMatrix(prev);
-      }
+        , prevMatrix = lightbox.transform.getElMatrix(prev);
     }
 
     if(box.right <= navTarget && distance > 150){
