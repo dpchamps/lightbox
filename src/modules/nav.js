@@ -119,6 +119,7 @@ var nav = function(thumbClass) {
         nextImage = getImage('next')
       , prevImage = getImage('prev');
     imageCycle = true;
+
     cache.loadImage(nextImage.image).then(function(image){
       addImage(nextImage.idx, image, 'next');
     });

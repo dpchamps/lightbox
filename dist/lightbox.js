@@ -484,9 +484,15 @@ var imageHold = function () {
     if(lightbox.nav.imageCycle()){
       var
         next = lightbox.modal('next')[0]
-        , nextMatrix = lightbox.transform.getElMatrix(next)
+        , nextMatrix
         , prev = lightbox.modal('prev')[0]
-        , prevMatrix = lightbox.transform.getElMatrix(prev);
+        , prevMatrix;
+      if (next.complete){
+        nextMatrix = lightbox.transform.getElMatrix(next);
+      }
+      if(prev.complete){
+        prevMatrix = lightbox.transform.getElMatrix(prev);
+      }
     }
     lightbox.events.add(function translateMouseMove(e){
       var nX = (e.x || e.clientX),
@@ -1321,6 +1327,7 @@ var nav = function(thumbClass) {
         nextImage = getImage('next')
       , prevImage = getImage('prev');
     imageCycle = true;
+
     cache.loadImage(nextImage.image).then(function(image){
       addImage(nextImage.idx, image, 'next');
     });
