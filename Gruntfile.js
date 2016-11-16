@@ -9,7 +9,8 @@ module.exports = function(grunt) {
       },
       dist: {
         files: {
-          'dist/<%= pkg.name.replace(".js", "") %>.css': 'src/style/main.scss'
+          'dist/<%= pkg.name.replace(".js", "") %>.css': 'src/style/main.scss',
+          'dist/<%= pkg.name.replace(".js", "") %>.scss': 'src/style/main.scss'
         }
       }
     },
