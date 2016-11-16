@@ -543,9 +543,15 @@ var imageHoldRelease = function () {
     if(lightbox.nav.imageCycle()){
       var
         next = lightbox.modal('next')[0]
-        , nextMatrix = lightbox.transform.getElMatrix(next)
+        , nextMatrix
         , prev = lightbox.modal('prev')[0]
-        , prevMatrix = lightbox.transform.getElMatrix(prev);
+        , prevMatrix;
+      if (next && next.complete){
+        nextMatrix = lightbox.transform.getElMatrix(next);
+      }
+      if(prev && prev.complete){
+        prevMatrix = lightbox.transform.getElMatrix(prev);
+      }
     }
 
     if(box.right <= navTarget && distance > 150){
