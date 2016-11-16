@@ -487,10 +487,10 @@ var imageHold = function () {
         , nextMatrix
         , prev = lightbox.modal('prev')[0]
         , prevMatrix;
-      if (next.complete){
+      if (next && next.complete){
         nextMatrix = lightbox.transform.getElMatrix(next);
       }
-      if(prev.complete){
+      if(prev && prev.complete){
         prevMatrix = lightbox.transform.getElMatrix(prev);
       }
     }
